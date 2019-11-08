@@ -74,12 +74,15 @@ doFisher <- function(cont_tab,
 # each metabolite versus each gene, according to if the strains have or not the gene: determines if the strains that 
 # have or not have a gene are different in the terms of the abundance of each metabolite. The output is a matrix of 
 # p-values and a matrix of z-scores.
+
 getMannWhitPerGene <- function(genePresAbsObjkt, 
                                metMatObjkt, 
                                p_adjust = T, 
                                method = NULL, 
                                remove.underrepresented = T,
                                threshold = 1){
+        if(!require(uwIntroStats)) install.packages('uwIntroStats')
+        library(uwIntroStats)
         pb = txtProgressBar(min = 0, max = ncol(genePresAbsObjkt), initial = 0)
         mannWhitPerGene <- matrix(nrow = ncol(genePresAbsObjkt),
                                   ncol = ncol(metMatObjkt))
@@ -91,16 +94,28 @@ getMannWhitPerGene <- function(genePresAbsObjkt,
                 for(h in 1:ncol(metMatObjkt)){
                         if(remove.underrepresented == T){
                                 if(length(genePosi) > threshold && length(geneNega) > threshold){
-                                        mannWhitPerGene[j, h] <- wilcox.test(metMatObjkt[grepl(paste(genePosi, collapse = "|"), 
-                                                                                               rownames(metMatObjkt)), h],
-                                                                             metMatObjkt[grepl(paste(geneNega, collapse = "|"),
-                                                                                               rownames(metMatObjkt)), h])$p.value
+                                        p_val <- wilcoxon(metMatObjkt[grepl(paste(genePosi, collapse = "|"), 
+                                                                            rownames(metMatObjkt)), h], 
+                                                          metMatObjkt[grepl(paste(geneNega, collapse = "|"),
+                                                                            rownames(metMatObjkt)), h])$p.value
+                                        mannWhitPerGene[j, h] <- p_val
+                                        z_score <- as.numeric(wilcoxon(metMatObjkt[grepl(paste(genePosi, collapse = "|"), 
+                                                                                         rownames(metMatObjkt)), h],
+                                                                       metMatObjkt[grepl(paste(geneNega, collapse = "|"),
+                                                                                         rownames(metMatObjkt)), h])$inf[2, 1])
+                                        zScore[j, h ] <- z_score
                                 }  
                         }else{
-                                mannWhitPerGene[j, h] <- wilcox.test(metMatObjkt[grepl(paste(genePosi, collapse = "|"), 
-                                                                                       rownames(metMatObjkt)), h],
-                                                                     metMatObjkt[grepl(paste(geneNega, collapse = "|"),
-                                                                                       rownames(metMatObjkt)), h])$p.value
+                                p_val <- wilcoxon(metMatObjkt[grepl(paste(genePosi, collapse = "|"), 
+                                                                    rownames(metMatObjkt)), h], 
+                                                  metMatObjkt[grepl(paste(geneNega, collapse = "|"),
+                                                                    rownames(metMatObjkt)), h])$p.value
+                                mannWhitPerGene[j, h] <- p_val
+                                z_score <- as.numeric(wilcoxon(metMatObjkt[grepl(paste(genePosi, collapse = "|"), 
+                                                                                 rownames(metMatObjkt)), h],
+                                                               metMatObjkt[grepl(paste(geneNega, collapse = "|"),
+                                                                                 rownames(metMatObjkt)), h])$inf[2, 1])
+                                zScore[j, h ] <- z_score
                         }
                         
                 }
@@ -111,7 +126,6 @@ getMannWhitPerGene <- function(genePresAbsObjkt,
                                 mannWhitPerGene[j, ] <- p.adjust(mannWhitPerGene[j, ], method)
                         }
                 }
-                zScore[j, ] <- qnorm(mannWhitPerGene[j, ]/2)
                 setTxtProgressBar(pb, j)
         }
         rownames(mannWhitPerGene) <- colnames(genePresAbsObjkt)
@@ -124,6 +138,11 @@ getMannWhitPerGene <- function(genePresAbsObjkt,
         return(list("p.value" = mannWhitPerGene,
                     "z.score" = zScore))
 }
+
+
+
+
+
 
 # Filters the p-value matrix obtained in previous step (mannWhitPerGeneObjkt) to a given alpha (default: alpha = 0.05)
 filtMannWhitPerGene <- function(mannWhitPerGeneObjkt, alpha = 0.05){

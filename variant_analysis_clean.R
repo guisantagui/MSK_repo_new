@@ -566,6 +566,9 @@ ccmn_quant_norm_median_woPA14 <- ccmn_quant_norm_median[-c(1, 2), ]
 metDists_median_woPA14 <- dist(ccmn_quant_norm_median_woPA14, "euclidean")
 HCA_mets_median_woPA14 <- hclust(metDists_median_woPA14, method = "ward.D")
 
+metDists_goodOldMeds <- dist(goodOldMeds, "euclidean")
+HCA_goodOldMeds <- hclust(metDists_goodOldMeds, method = "ward.D")
+
 goodOldMeds_noPA14 <- goodOldMeds[-c(1, 2), ]
 metDists_goodOldMeds_noPA14 <- dist(goodOldMeds_noPA14, "euclidean")
 HCA_goodOldMeds_noPA14 <- hclust(metDists_goodOldMeds_noPA14, method = "ward.D")
@@ -575,9 +578,117 @@ plot(HCA_mets_median_woPA14)
 plot(HCA_hamDist_mixOld)
 plot(HCA_goodOldMeds_noPA14)
 
+tissues <- c("wild type", 
+             "wild type", 
+             "pubic bone", 
+             "blood", 
+             "urine", 
+             "tissue", 
+             "body fluid", 
+             "stool", 
+             "urine", 
+             "tissue", 
+             "blood", 
+             "body fluid", 
+             "blood",
+             "urine",
+             "sputum",
+             "urine",
+             "blood",
+             "blood",
+             "blood",
+             "blood",
+             "sputum",
+             "urine",
+             "blood",
+             "body fluid",
+             "blood",
+             "sputum",
+             "blood",
+             "blood")
+
+names(tissues) <- rownames(goodOldMeds)
+tissues <- as.factor(tissues)
+
+
+library(dendextend)
+
+small_iris <- iris[c(1, 51, 101, 2, 52, 102), ]
+dend <- as.dendrogram(hclust(dist(small_iris[,-5])))
+# Like: 
+# dend <- small_iris[,-5] %>% dist %>% hclust %>% as.dendrogram
+
+# By default, the dend has no colors to the labels
+labels_colors(dend)
+par(mfrow = c(1,2))
+plot(dend, main = "Original dend")
+
+# let's add some color:
+colors_to_use <- as.numeric(small_iris[,5])
+colors_to_use
+# But sort them based on their order in dend:
+colors_to_use <- colors_to_use[order.dendrogram(dend)]
+colors_to_use
+# Now we can use them
+labels_colors(dend) <- colors_to_use
+# Now each state has a color
+labels_colors(dend) 
+plot(dend, main = "A color for every Species")
+
+
+
+
+
+df <- goodOldMeds   # really bad idea to muck up internal datasets
+
+
+if(!require(magittr)) BiocManager::install('magittr')
+require(ggplot)
+require(dendextend)
+
+dend <- df %>% dist(method = "euclidean") %>%
+        hclust(method = "ward.D") %>% as.dendrogram %>%
+        set("branches_k_color", k = 2) %>% set("branches_lwd", 0.7) %>%
+        set("labels_cex", 0.8) %>% set("leaves_pch", 19) %>% 
+        set("leaves_cex", 0.5) 
+
+unique(tissues)
+tissuesColors <- c("firebrick",
+                   "blue3",
+                   "burly wood", 
+                   "cadetblue3",
+                   "chocolate4",
+                   "darkgreen",
+                   "darkgoldenrod1",
+                   "black")
+colorsToUse <- as.numeric(tissues)
+colorsToUse <- tissuesColors[colorsToUse]
+colorsToUse <- colorsToUse[order.dendrogram(dend)]
+labels_colors(dend) <- colorsToUse
+
+ggd1 <- as.ggdend(dend)
+ggplot(ggd1)
+ggsave(filename = "tst.pdf", plot = last_plot(), device = "pdf", 
+       path = NULL,
+       scale = 1, width = 40, height = 35, units = "cm",
+       dpi = 300, limitsize = F)
+
+
+
+
+
+
+
+ggdendrogram(data = HCA_goodOldMeds, main = "HCA medians Mets  (Old Data)")
+ggsave(filename = "HCA_CCMN_goodOld.pdf", plot = last_plot(), device = "pdf", 
+       path = NULL,
+       scale = 1, width = 40, height = 20, units = "cm",
+       dpi = 300, limitsize = F)
+cophMat <- cophenetic(HCA_CCMN)
+
 ggdendrogram(data = HCA_hamDist_mixOld, main = "HCA HamDist Mic (Old Data)")
 ggdendrogram(data = HCA_goodOldMeds_noPA14, main = "HCA medians Mets without PA14 (Old Data)")
-ggsave(filename = "HCA_CCMN_goodOld.pdf", plot = last_plot(), device = "pdf", 
+ggsave(filename = "HCA_CCMN_goodOld_noPA14.pdf", plot = last_plot(), device = "pdf", 
        path = NULL,
        scale = 1, width = 40, height = 20, units = "cm",
        dpi = 300, limitsize = F)

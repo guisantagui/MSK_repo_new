@@ -96,7 +96,9 @@ load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/dictionary/dictionary.RDa
 
 compKEGGIDs <- dictionary$`KEGG IDs`[match(colnames(ccmn_norm_mets), dictionary$`Old Data Names`)]
 
-
+newMetNames <- dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)]
+colnames(ccmn_norm_mets) <- newMetNames
+ccmn_norm_mets <- ccmn_norm_mets[, !is.na(colnames(ccmn_norm_mets))]
 
 quantNorm <- function(m){
         meanrank <- function(x){rank(x)/length(x)}
@@ -204,14 +206,29 @@ for(i in 1:ncol(ccmn_norm_mets)){
 }
 
 is_different_undisc <- c()
+pvals_undisc1_2 <- c()
 for(i in 1:length(wilcres_undisc)){
         if(wilcres_undisc[[i]][3] < 0.05){
                 is_different_undisc[i] <- T
+                pvals_undisc1_2 <- c(pvals_undisc1_2, wilcres_undisc[[i]][3])
         }else{is_different_undisc[i] <- F}
         names(is_different_undisc)[i] <- names(wilcres_undisc)[i]
 }
+names(pvals_undisc1_2) <- names(wilcres_undisc[is_different_undisc])
+pvals_undisc1_2 <- rmAmbig(pvals_undisc1_2)
 
 topDiffMets_branches1_2_undisc <- rev(sort(abs(HCA_ccmn_median_group1[is_different_undisc] - HCA_ccmn_median_group2[is_different_undisc])))
+
+# Remove those with _? ---> Those are the ones that we're not sure about their ID.
+
+rmAmbig <- function(topDiffMets){
+        removed <- topDiffMets[-grep("_?", names(topDiffMets), fixed = T)] 
+        return(removed)
+}
+
+topDiffMets_branches1_2_undisc <- rmAmbig(topDiffMets_branches1_2_undisc)
+
+pvals_undisc1_2 <- pvals_undisc1_2[match(names(topDiffMets_branches1_2_undisc), names(pvals_undisc1_2))]
 
 topDiffMets_branches1_2_undisc_KEGGIDs <- dictionary$`KEGG IDs`[match(names(topDiffMets_branches1_2_undisc), dictionary$Consensus)]
 
@@ -402,14 +419,23 @@ for(i in 1:ncol(ccmn_clust1)){
 }
 
 is_different_clust1 <- c()
+pvals_1.1_1.2 <- c()
 for(i in 1:length(wilcres_clust1)){
         if(wilcres_clust1[[i]][3] < 0.05){
                 is_different_clust1[i] <- T
+                pvals_1.1_1.2 <- c(pvals_1.1_1.2, wilcres_clust1[[i]][3])
         }else{is_different_clust1[i] <- F}
         names(is_different_clust1)[i] <- names(wilcres_clust1)[i]
 }
+names(pvals_1.1_1.2) <- names(wilcres_clust1[is_different_clust1])
+
+pvals_1.1_1.2 <- rmAmbig(pvals_1.1_1.2)
 
 topDiffMets_branches1.1_1.2 <- rev(sort(abs(HCA_ccmn_median_group1.1[is_different_clust1] - HCA_ccmn_median_group1.2[is_different_clust1])))
+
+topDiffMets_branches1.1_1.2<- rmAmbig(topDiffMets_branches1.1_1.2)
+
+pvals_1.1_1.2 <- pvals_1.1_1.2[match(names(topDiffMets_branches1.1_1.2), names(pvals_1.1_1.2))]
 
 topDiffMets_branches1.1_1.2_KEGGIDs <- dictionary$`KEGG IDs`[match(names(topDiffMets_branches1.1_1.2), dictionary$Consensus)]
 
@@ -442,14 +468,22 @@ for(i in 1:ncol(ccmn_clust2)){
 }
 
 is_different_clust2 <- c()
+pvals_2.1_2.2 <- c()
 for(i in 1:length(wilcres_clust2)){
         if(wilcres_clust2[[i]][3] < 0.05){
                 is_different_clust2[i] <- T
+                pvals_2.1_2.2 <- c(pvals_2.1_2.2, wilcres_clust2[[i]][3])
         }else{is_different_clust2[i] <- F}
         names(is_different_clust2)[i] <- names(wilcres_clust2)[i]
 }
+names(pvals_2.1_2.2) <- names(wilcres_clust2[is_different_clust2])
+
+pvals_2.1_2.2 <- rmAmbig(pvals_2.1_2.2)
+pvals_2.1_2.2 <- pvals_2.1_2.2[match(names(topDiffMets_branches2.1_2.2), names(pvals_2.1_2.2))]
 
 topDiffMets_branches2.1_2.2 <- rev(sort(abs(HCA_ccmn_median_group2.1[is_different_clust2] - HCA_ccmn_median_group2.2[is_different_clust2])))
+
+topDiffMets_branches2.1_2.2 <- rmAmbig(topDiffMets_branches2.1_2.2)
 
 topDiffMets_branches2.1_2.2_KEGGIDs <- dictionary$`KEGG IDs`[match(names(topDiffMets_branches2.1_2.2), dictionary$Consensus)]
 
