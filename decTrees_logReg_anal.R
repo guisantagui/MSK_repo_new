@@ -99,16 +99,36 @@ write.csv(geneTabFilt_grouped_hyb, file = "geneTabFilt_grouped_hyb.csv")
 ########################################################################################################################################################
 
 tree.genes_old = tree(Clusters_2 ~ . - Clusters_4, data = geneTabFilt_grouped_oldG)
-summary(tree.genes_old)
+sum <- summary(tree.genes_old)
 plot(tree.genes_old)
 text(tree.genes_old, pretty = 0)
 cv.genes_old = cv.tree(tree.genes_old, FUN = prune.misclass)
 plot(cv.genes_old)
 
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          sum$used[1])]))
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          sum$used[2])]))
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          sum$used[3])]))
+
 tree.genes2_old = tree(Clusters_4 ~ . - Clusters_2, data = geneTabFilt_grouped_oldG)
-summary(tree.genes2_old)
+sum <- summary(tree.genes2_old)
 plot(tree.genes2_old)
 text(tree.genes2_old, pretty = 0)
+
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          sum$used[1])]))
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          sum$used[2])]))
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          sum$used[3])]))
 
 set.seed(101)
 train_old=sample(1:nrow(geneTabFilt_grouped_oldG), 15)
@@ -308,20 +328,11 @@ head(bstClasses)
 confusionMatrix(data = bstClasses, testing$Clusters_2)#-->Good accuracy, but it doesn't beat No Info Rate
 
 ##Look if inside of the goups are other genes with biological meaning
-names(which(hca_jaccMat_group_genes == 
-                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          rownames(importance[[1]])[1])]))#-->No more genes
-names(which(hca_jaccMat_group_genes == 
-                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          rownames(importance[[1]])[2])]))#-->No more genes
-names(which(hca_jaccMat_group_genes == 
-                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          rownames(importance[[1]])[3])]))#-->One more gene
-#Agmatine deaminase is related to arginine and proline metabolism, which according FELLA and our exploration of the percentage of
-#representation of pathways, is related to the differences between clusters 1 and 2.
-
-rownames(genes_strains_filt_grouped)[which(genes_strains_filt_grouped[, "Similar.to.Agmatine.deiminase"] == 1)]
-genes_strains_filt_grouped[, "Clusters_4"][which(genes_strains_filt_grouped[, "Similar.to.Agmatine.deiminase"] == 1)]
+for(i in 1:nrow(importance$importance)){
+        print(names(which(hca_jaccMat_group_genes == 
+                            hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                                  rownames(importance[[1]])[i])])))
+}
 
 # Similar to Agmatine deiminase gene is present in strains F34365, H5708, M1608, M37351, W45909, which belong to clusters
 # 2.1, 1.2, 2.1, 1.2 & 1.1 respectively.
@@ -367,41 +378,63 @@ which(colnames(genes_strains_filt_grouped) == "Similar.to.Agmatine.deiminase")
 ##Look if inside of the goups are other genes with biological meaning
 names(which(hca_jaccMat_group_genes == 
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          results$variables$var[1])]))#-->No more genes
+                                                          predictors(results)[1])]))#-->No more genes
 names(which(hca_jaccMat_group_genes == 
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          results$variables$var[2])]))#-->No more genes
+                                                          predictors(results)[2])]))#-->No more genes
 names(which(hca_jaccMat_group_genes == 
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          results$variables$var[3])]))#-->No more genes
+                                                          predictors(results)[3])]))#-->No more genes
 names(which(hca_jaccMat_group_genes == 
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          results$variables$var[4])]))#-->No more genes
+                                                          predictors(results)[4])]))#-->No more genes
 names(which(hca_jaccMat_group_genes == 
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
-                                                          results$variables$var[5])]))#-->No more genes
+                                                          predictors(results)[5])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[6])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[7])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[8])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[9])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[10])]))#-->No more genes
 
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/presAbsC1_2Genes_old_filtEnz.RData")
 
 mixedSign <- rbind(presAbsC1_2Genes_old_filtEnz, 
                    gene_enz_tab_filt[, grep("Thioredoxin", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("APECO1", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Sulfur", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Adenylylsulfate", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Late", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Retron", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Methyl-directed", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Rhamnolipids", colnames(gene_enz_tab_filt))])
-rownames(mixedSign)[5:12] <- c(colnames(gene_enz_tab_filt)[grep("Thioredoxin", colnames(gene_enz_tab_filt))],
-                               colnames(gene_enz_tab_filt)[grep("APECO1", colnames(gene_enz_tab_filt))],
-                               colnames(gene_enz_tab_filt)[grep("Sulfur", colnames(gene_enz_tab_filt))],
-                               colnames(gene_enz_tab_filt)[grep("Adenylylsulfate", colnames(gene_enz_tab_filt))],
-                               colnames(gene_enz_tab_filt)[grep("Late", colnames(gene_enz_tab_filt))],
-                               colnames(gene_enz_tab_filt)[grep("Retron", colnames(gene_enz_tab_filt))],
-                               colnames(gene_enz_tab_filt)[grep("Methyl-directed", colnames(gene_enz_tab_filt))],
-                               colnames(gene_enz_tab_filt)[grep("Rhamnolipids", colnames(gene_enz_tab_filt))])
-        
-        
+                   gene_enz_tab_filt[, grep("Arsenical pump-driving", colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[, grep("Dihydropteroate", colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[, grep("Aminoglycoside", colnames(gene_enz_tab_filt))[1]],
+                   gene_enz_tab_filt[, grep("Aminoglycoside", colnames(gene_enz_tab_filt))[2]],
+                   gene_enz_tab_filt[, grep("Homospermidine", colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[, grep("Mercuric ion reductase", colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[, grep("Thioredoxin", colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[, grep("Sulfur carrier", colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[, grep("restriction subunit R", colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[, grep("methyltransferase subunit M", colnames(gene_enz_tab_filt))])
+rownames(mixedSign)[5:nrow(mixedSign)] <- c(colnames(gene_enz_tab_filt)[grep("Thioredoxin", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Arsenical pump-driving", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Dihydropteroate", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Aminoglycoside", colnames(gene_enz_tab_filt))[1]],
+                                            colnames(gene_enz_tab_filt)[grep("Aminoglycoside", colnames(gene_enz_tab_filt))[2]],
+                                            colnames(gene_enz_tab_filt)[grep("Homospermidine", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Mercuric ion reductase", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Thioredoxin", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Sulfur carrier", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("restriction subunit R", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("methyltransferase subunit M", colnames(gene_enz_tab_filt))])
+
+mixedSign_old <- mixedSign        
+save(mixedSign_old, file = "mixedSign_old.RData")        
 
 
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/metClusts_oldGood.RData")
