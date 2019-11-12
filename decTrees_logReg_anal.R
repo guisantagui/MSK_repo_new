@@ -406,21 +406,58 @@ names(which(hca_jaccMat_group_genes ==
 names(which(hca_jaccMat_group_genes == 
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
                                                           predictors(results)[10])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[11])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[12])]))#-->No more genes
+names(which(hca_jaccMat_group_genes == 
+                    hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                          predictors(results)[13])]))#-->No more genes
 
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/presAbsC1_2Genes_old_filtEnz.RData")
 
 mixedSign <- rbind(presAbsC1_2Genes_old_filtEnz, 
-                   gene_enz_tab_filt[, grep("Thioredoxin", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Arsenical pump-driving", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Dihydropteroate", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Aminoglycoside", colnames(gene_enz_tab_filt))[1]],
-                   gene_enz_tab_filt[, grep("Aminoglycoside", colnames(gene_enz_tab_filt))[2]],
-                   gene_enz_tab_filt[, grep("Homospermidine", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Mercuric ion reductase", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Thioredoxin", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("Sulfur carrier", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("restriction subunit R", colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[, grep("methyltransferase subunit M", colnames(gene_enz_tab_filt))])
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Thioredoxin", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Arsenical pump-driving", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Dihydropteroate", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Aminoglycoside", 
+                                                                                         colnames(gene_enz_tab_filt))[1]],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Aminoglycoside", 
+                                                                                         colnames(gene_enz_tab_filt))[2]],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Homospermidine", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Mercuric ion reductase", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Sulfur carrier", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("restriction subunit R", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("methyltransferase subunit M", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Methyl-directed", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("Phosphate acetyltransferase (EC 2.3.1.8)", 
+                                                                                         colnames(gene_enz_tab_filt))],
+                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
+                                           rownames(gene_enz_tab_filt)), grep("1,3,6,8", 
+                                                                                         colnames(gene_enz_tab_filt))])
 rownames(mixedSign)[5:nrow(mixedSign)] <- c(colnames(gene_enz_tab_filt)[grep("Thioredoxin", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("Arsenical pump-driving", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("Dihydropteroate", colnames(gene_enz_tab_filt))],
@@ -428,10 +465,12 @@ rownames(mixedSign)[5:nrow(mixedSign)] <- c(colnames(gene_enz_tab_filt)[grep("Th
                                             colnames(gene_enz_tab_filt)[grep("Aminoglycoside", colnames(gene_enz_tab_filt))[2]],
                                             colnames(gene_enz_tab_filt)[grep("Homospermidine", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("Mercuric ion reductase", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("Thioredoxin", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("Sulfur carrier", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("restriction subunit R", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("methyltransferase subunit M", colnames(gene_enz_tab_filt))])
+                                            colnames(gene_enz_tab_filt)[grep("methyltransferase subunit M", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Methyl-directed", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Phosphate acetyltransferase (EC 2.3.1.8)", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("1,3,6,8", colnames(gene_enz_tab_filt))])
 
 mixedSign_old <- mixedSign        
 save(mixedSign_old, file = "mixedSign_old.RData")        
@@ -448,7 +487,7 @@ cols <- cols[-1]
 cols[1] <- '#000000'
 
 tiff("minedDiffGenes_old_withRFE.tiff", width = 7000, height = 5000, units = "px", pointsize = 100)
-heatmap.2(mixedSign, Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
+heatmap.2(as.matrix(mixedSign_old), Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
           col = c("blue", "red"), ColSideColors = cols[match(clustOrdC1_2_old, rownames(gene_tab))], notecol = NULL, trace = "none", xlab = "Strains", 
           ylab = "Genes", main = "Presence/absence of diff genes", margins = c(6, 50), 
