@@ -99,11 +99,14 @@ write.csv(geneTabFilt_grouped_hyb, file = "geneTabFilt_grouped_hyb.csv")
 ########################################################################################################################################################
 
 tree.genes_old = tree(Clusters_2 ~ . - Clusters_4, data = geneTabFilt_grouped_oldG)
-sum <- summary(tree.genes_old)
+sum1 <- summary(tree.genes_old)
 plot(tree.genes_old)
 text(tree.genes_old, pretty = 0)
 cv.genes_old = cv.tree(tree.genes_old, FUN = prune.misclass)
 plot(cv.genes_old)
+
+tree.pred_old = predict(tree.genes_old, geneTabFilt_grouped_oldG, type = "class")
+with(geneTabFilt_grouped_oldG, table(tree.pred_old, Clusters_2)) #--> 80.7% accuracy
 
 names(which(hca_jaccMat_group_genes == 
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
@@ -115,8 +118,10 @@ names(which(hca_jaccMat_group_genes ==
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
                                                           sum$used[3])]))
 
+train(Clusters_2 ~.-Clusters_4, data = geneTabFilt_grouped_oldG, method="rpart", trControl = trainControl(method = "cv"))
+
 tree.genes2_old = tree(Clusters_4 ~ . - Clusters_2, data = geneTabFilt_grouped_oldG)
-sum <- summary(tree.genes2_old)
+sum2 <- summary(tree.genes2_old)
 plot(tree.genes2_old)
 text(tree.genes2_old, pretty = 0)
 
@@ -357,10 +362,25 @@ plot(results, type=c("g", "o"))
 
 bstLogFit <- train(
         Clusters_2~Serine..glyoxylate.aminotransferase..EC.2.6.1.45. +
+                Homospermidine.synthase..EC.2.5.1.44. +
+                Arsenical.pump.driving.ATPase..EC.3.6.3.16. +
                 NAD.P..dependent.glyceraldehyde.3.phosphate.dehydrogenase.archaeal..EC.1.2.1.59. +
-                Thioredoxin.2..EC.1.8.1.8. +
-                hypothetical.protein.APECO1_2271 +
+                Mercuric.ion.reductase..EC.1.16.1.1. +
+                Dihydropteroate.synthase.type.2..EC.2.5.1.15....Sulfonamide.resistance.protein +
                 Sulfur.carrier.protein.ThiS.adenylyltransferase..EC.2.7.7.73. +
+                Thioredoxin.2..EC.1.8.1.8. +
+                Type.I.restriction.modification.system..restriction.subunit.R..EC.3.1.21.3. +
+                DNA.topoisomerase.III..EC.5.99.1.2..in.PFGI.1.like.cluster +
+                Methyl.directed.repair.DNA.adenine.methylase..EC.2.1.1.72. +
+                Phosphate.acetyltransferase..EC.2.3.1.8. +
+                X1.3.6.8.tetrahydroxynaphthalene.synthase..EC.2.3.1.233. +
+                Adenylylsulfate.kinase..EC.2.7.1.25. +
+                Retron.type.RNA.directed.DNA.polymerase..EC.2.7.7.49. +
+                Non.hemolytic.phospholipase.C.precursor..EC.3.1.4.3. +
+                Lipid.carrier...UDP.N.acetylgalactosaminyltransferase..EC.2.4.1......Alpha.1.3.N.acetylgalactosamine.transferase.PglA..EC.2.4.1.....Putative.glycosyltransferase +
+                Type.I.restriction.modification.system..DNA.methyltransferase.subunit.M..EC.2.1.1.72. +
+                Phosphonate.dehydrogenase..EC.1.20.1.1. +
+                Manganese.catalase..EC.1.11.1.6.
                 -Clusters_4,
         data = training,
         method = "glm",
@@ -416,60 +436,97 @@ names(which(hca_jaccMat_group_genes ==
                     hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
                                                           predictors(results)[13])]))#-->No more genes
 
+# Look for the overlapping genes between the ones obtained using RFE, Mann-Whit mining, decision trees 
+# and Fisher test
+if(!require(graph)) BiocManager::install("graph")
+if(!require(RBGL)) BiocManager::install("RBGL")
+if(!require(Vennerable)) install.packages("Vennerable", repos="http://R-Forge.R-project.org")
+library(Vennerable)
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/C1_2Genes_old_filtEnz.RData")
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/fish_oldGood_enz.RData")
+C1_2Genes_old_filtEnz
+mannWhit_old <- c(colnames(geneTabFilt_grouped_oldG)[grep("Serine", colnames(geneTabFilt_grouped_oldG))],
+                  colnames(geneTabFilt_grouped_oldG)[grep("Cyclic.beta", colnames(geneTabFilt_grouped_oldG))],
+                  colnames(geneTabFilt_grouped_oldG)[grep("DNA.topoisomerase.III", colnames(geneTabFilt_grouped_oldG))], 
+                  colnames(geneTabFilt_grouped_oldG)[grep("NAD.P", colnames(geneTabFilt_grouped_oldG))])
+fish_oldGood_filtEnz
+fish_old <- c(colnames(geneTabFilt_grouped_oldG)[grep("Mercuric", colnames(geneTabFilt_grouped_oldG))],
+              colnames(geneTabFilt_grouped_oldG)[grep("1.3.6.8", colnames(geneTabFilt_grouped_oldG))],
+              colnames(geneTabFilt_grouped_oldG)[grep("Adenylylsulfate", colnames(geneTabFilt_grouped_oldG))], 
+              colnames(geneTabFilt_grouped_oldG)[grep("Arsenical", colnames(geneTabFilt_grouped_oldG))],
+              colnames(geneTabFilt_grouped_oldG)[grep("NAD.P", colnames(geneTabFilt_grouped_oldG))],
+              colnames(geneTabFilt_grouped_oldG)[grep("Non", colnames(geneTabFilt_grouped_oldG))],
+              colnames(geneTabFilt_grouped_oldG)[grep("Alpha.1.3.N", colnames(geneTabFilt_grouped_oldG))],
+              colnames(geneTabFilt_grouped_oldG)[grep("Sulfur", colnames(geneTabFilt_grouped_oldG))],
+              colnames(geneTabFilt_grouped_oldG)[grep("Serine", colnames(geneTabFilt_grouped_oldG))])
+
+RFE <- results$optVariables
+decTrees <- sum1$used
+
+results$optVariables[results$optVariables %in% sum1$used]
+mannWhit_old[mannWhit_old %in% results$optVariables[1:20]]
+overlapFeats <- list("RFE" = RFE[1:20], 
+                     "Decision trees" = decTrees, 
+                     "Mann-Whitney mining" = mannWhit_old, 
+                     "Fisher test" = fish_old)
+
+vennOld_impFeats <- Venn(Sets = overlapFeats)
+tiff(filename = "overlapImpFeats.tiff", height = 500, width = 700)
+plot(vennOld_impFeats, doWeights = F, type = "ellipses")
+dev.off()
+
+# Select the ones that have at least one overlap a
+overlaping <- unique(c(RFE[1:15][RFE[1:15] %in% decTrees],
+                       RFE[1:15][RFE[1:15] %in% mannWhit_old], 
+                       RFE[1:15][RFE[1:15] %in% fish_old]))
+
+for(i in seq_along(overlaping)){
+        print(names(which(hca_jaccMat_group_genes == 
+                                  hca_jaccMat_group_genes[which(names(hca_jaccMat_group_genes) == 
+                                                                        overlaping[i])])))
+}
+# Those genes weren't grouped
+
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/presAbsC1_2Genes_old_filtEnz.RData")
+presAbsC1_2Genes_old_filtEnz <- presAbsC1_2Genes_old_filtEnz[-grep("Cyclic", rownames(presAbsC1_2Genes_old_filtEnz)), ]
 
 mixedSign <- rbind(presAbsC1_2Genes_old_filtEnz, 
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("Thioredoxin", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                           rownames(gene_enz_tab_filt)), grep("Retron", 
+                                                                              colnames(gene_enz_tab_filt))],
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
                                            rownames(gene_enz_tab_filt)), grep("Arsenical pump-driving", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                                                              colnames(gene_enz_tab_filt))],
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("Dihydropteroate", 
-                                                                                         colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("Aminoglycoside", 
-                                                                                         colnames(gene_enz_tab_filt))[1]],
-                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("Aminoglycoside", 
-                                                                                         colnames(gene_enz_tab_filt))[2]],
-                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("Homospermidine", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                           rownames(gene_enz_tab_filt)), grep("Manganese", 
+                                                                              colnames(gene_enz_tab_filt))],
+
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
                                            rownames(gene_enz_tab_filt)), grep("Mercuric ion reductase", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                                                              colnames(gene_enz_tab_filt))],
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
                                            rownames(gene_enz_tab_filt)), grep("Sulfur carrier", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                                                              colnames(gene_enz_tab_filt))],
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("restriction subunit R", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                           rownames(gene_enz_tab_filt)), grep("Adenylylsulfate", 
+                                                                              colnames(gene_enz_tab_filt))],
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("methyltransferase subunit M", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                           rownames(gene_enz_tab_filt)), grep("Non-hemolytic", 
+                                                                              colnames(gene_enz_tab_filt))],
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("Methyl-directed", 
-                                                                                         colnames(gene_enz_tab_filt))],
-                   gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
-                                           rownames(gene_enz_tab_filt)), grep("Phosphate acetyltransferase (EC 2.3.1.8)", 
-                                                                                         colnames(gene_enz_tab_filt))],
+                                           rownames(gene_enz_tab_filt)), grep("acetylgalactosamine", 
+                                                                              colnames(gene_enz_tab_filt))],
                    gene_enz_tab_filt[match(colnames(presAbsC1_2Genes_old_filtEnz), 
                                            rownames(gene_enz_tab_filt)), grep("1,3,6,8", 
-                                                                                         colnames(gene_enz_tab_filt))])
-rownames(mixedSign)[5:nrow(mixedSign)] <- c(colnames(gene_enz_tab_filt)[grep("Thioredoxin", colnames(gene_enz_tab_filt))],
+                                                                              colnames(gene_enz_tab_filt))])
+rownames(mixedSign)[4:nrow(mixedSign)] <- c(colnames(gene_enz_tab_filt)[grep("Retron", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("Arsenical pump-driving", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("Dihydropteroate", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("Aminoglycoside", colnames(gene_enz_tab_filt))[1]],
-                                            colnames(gene_enz_tab_filt)[grep("Aminoglycoside", colnames(gene_enz_tab_filt))[2]],
-                                            colnames(gene_enz_tab_filt)[grep("Homospermidine", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Manganese", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("Mercuric ion reductase", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("Sulfur carrier", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("restriction subunit R", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("methyltransferase subunit M", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("Methyl-directed", colnames(gene_enz_tab_filt))],
-                                            colnames(gene_enz_tab_filt)[grep("Phosphate acetyltransferase (EC 2.3.1.8)", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Adenylylsulfate", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("Non-hemolytic", colnames(gene_enz_tab_filt))],
+                                            colnames(gene_enz_tab_filt)[grep("acetylgalactosamine", colnames(gene_enz_tab_filt))],
                                             colnames(gene_enz_tab_filt)[grep("1,3,6,8", colnames(gene_enz_tab_filt))])
 
 mixedSign_old <- mixedSign        
@@ -482,17 +539,21 @@ clustOrdC1_2_old <- names(sort(metClusts_oldGood[2:length(metClusts_oldGood)]))
 if(!require(gplots)) install.packages('gplots')
 library(gplots)
 
-cols <- topo.colors(nrow(gene_enz_tab_filt))
-cols <- cols[-1]
-cols[1] <- '#000000'
+cols <- topo.colors(nrow(gene_enz_tab_filt) + 2)
+cols <- cols[-c(1, 2)]
 
-tiff("minedDiffGenes_old_withRFE.tiff", width = 7000, height = 5000, units = "px", pointsize = 100)
+rownames(mixedSign_old) <- gsub(" /.*", rownames(mixedSign_old), replacement = "")
+
+tiff("minedDiffGenes_old_withRFE2.tiff", width = 10000, height = 5000, units = "px", pointsize = 100)
 heatmap.2(as.matrix(mixedSign_old), Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
-          col = c("blue", "red"), ColSideColors = cols[match(clustOrdC1_2_old, rownames(gene_tab))], notecol = NULL, trace = "none", xlab = "Strains", 
-          ylab = "Genes", main = "Presence/absence of diff genes", margins = c(6, 50), 
+          col = c("blue", "red"), ColSideColors = cols[match(clustOrdC1_2_old, rownames(gene_tab)[-1])], notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Genes", main = "Presence/absence of overlapping differential genes", margins = c(8, 60), 
           keysize = 1,
           sepwidth = c(0.1, 0.05),
+          cexRow = 1.75,
+          cexCol = 1.75,
+
           #sepcolor = "black",
           #colsep=1:ncol(t(gene_tab)),
           #rowsep=1:nrow(t(gene_tab)),

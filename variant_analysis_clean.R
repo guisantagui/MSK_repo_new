@@ -566,7 +566,7 @@ HCA_hamDist_mixOld <- hclust(as.dist(hamDist_mixOld), method = "complete")
 # Compare with the dendrogram obtained when clustering the metabolomic data
 if(!require(dendextend)) install.packages("dendextend")
 library(dendextend)
-require(ggplot)
+require(ggplot2)
 
 
 metDists_goodOldMeds <- dist(goodOldMeds, "euclidean")
@@ -635,8 +635,8 @@ goodOldMeds_hcdata$labels <- merge(x = goodOldMeds_hcdata$labels,
 
 ggplot() +
         geom_segment(data=segment(goodOldMeds_hcdata), aes(x=x, y=y, xend=xend, yend=yend)) +
-        geom_text(data = label(hcdata), aes(x=x, y=y, label=label, colour = Tissue, hjust=0), size=4) +
-        geom_point(data = label(hcdata), aes(x=x, y=y), size=0.1, shape = 21) +
+        geom_text(data = label(goodOldMeds_hcdata), aes(x=x, y=y, label=label, colour = Tissue, hjust=0), size=4) +
+        geom_point(data = label(goodOldMeds_hcdata), aes(x=x, y=y), size=0.1, shape = 21) +
         coord_flip() +
         scale_y_reverse(expand=c(0.2, 0)) +
         scale_colour_brewer(palette = "Dark2") + 
@@ -673,16 +673,35 @@ cor(metDists_goodOldMeds, cophMat)
 dend_hamDist_varMatGeneTab <- as.dendrogram(HCA_hamDist_varMatGeneTab)
 dend_hamDist_mixOld <- as.dendrogram(HCA_hamDist_mixOld)
 dend_goodOldMeds_noPA14 <- as.dendrogram(HCA_goodOldMeds_noPA14)
+dend_goodOldMeds <- as.dendrogram(HCA_goodOldMeds)
 
 
-dend_compList_varMatGeneTab <- dendlist(dend_hamDist_varMatGeneTab, dend_goodOldMeds_noPA14) %>% untangle(method = "step1side") %>%
-        tanglegram()  
+
+dend_compList_varMatGeneTab <- dendlist(dend_hamDist_varMatGeneTab, dend_goodOldMeds) %>% untangle(method = "step1side") %>%
+        tanglegram(main_left = "Hamming Dendrogram of Variants and presence of differential genes",
+                   main_right = "Metabolite abundance dendrogram", sort = T)  
+dev.off()
 
 dendlist(dend_hamDist_varMatGeneTab, dend_goodOldMeds_noPA14) %>% untangle(method = "step1side") %>%
         entanglement() #--> 0.17 --> Close to cero, so it means that are related.
 
+
+tiff(filename = "tanlegram_hammingDiffGenes&Vars_ccmnMedClust.tiff", height = 3000, width = 6000, units = "px")
 dend_compList_old <- dendlist(dend_hamDist_mixOld, dend_goodOldMeds_noPA14) %>% untangle(method = "step1side") %>%
-        tanglegram()  
+        tanglegram(main_left = "Hamming Dendrogram of Variants and presence of differential genes",
+                   main_right = "Metabolite abundance dendrogram", 
+                   cex_main = 8,
+                   lab.cex = 6, 
+                   dLeaf_left = -0.4,
+                   dLeaf_right = 0.04, 
+                   margin_top = 10,
+                   margin_inner = 22,
+                   margin_outer = 22,
+                   edge.lwd = 5,
+                   lwd = 7)  
+dev.off()
+
+
 
 dendlist(dend_hamDist_mixOld, dend_goodOldMeds_noPA14) %>% untangle(method = "step1side") %>%
         entanglement() 
