@@ -67,6 +67,6 @@ library(Vennerable)
 
 compGenes <- list(PA14 = gPA14Mod_subst, iJN1411 = genes_iJN1411[, 1])
 vennD <- Venn(Sets = compGenes)
-tiff(filename = "PA14_iJN1411_overlap.tiff", height = 1000, width = 1500)
+tiff(filename = "PA14_iJN1411_overlap.tiff", height = 1300, width = 1800, res = 300)
 plot(vennD, doWeights = TRUE, type = "circles")
 dev.off()

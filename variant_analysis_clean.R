@@ -635,7 +635,7 @@ goodOldMeds_hcdata$labels <- merge(x = goodOldMeds_hcdata$labels,
 
 ggplot() +
         geom_segment(data=segment(goodOldMeds_hcdata), aes(x=x, y=y, xend=xend, yend=yend)) +
-        geom_text(data = label(goodOldMeds_hcdata), aes(x=x, y=y, label=label, colour = Tissue, hjust=0), size=4) +
+        geom_text(data = label(goodOldMeds_hcdata), aes(x=x, y=y, label=label, colour = Tissue, hjust=0), size=5) +
         geom_point(data = label(goodOldMeds_hcdata), aes(x=x, y=y), size=0.1, shape = 21) +
         coord_flip() +
         scale_y_reverse(expand=c(0.2, 0)) +
@@ -645,7 +645,7 @@ ggplot() +
 
 ggsave(filename = "HCA_Medians_oldData.tiff", plot = last_plot(), device = "tiff", 
        path = NULL,
-       scale = 1, width = 15, height = 40, units = "cm",
+       scale = 1, width = 18, height = 40, units = "cm",
        dpi = 300, limitsize = F)
 
 
