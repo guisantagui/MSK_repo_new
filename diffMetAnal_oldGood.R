@@ -396,6 +396,79 @@ topDiffMets_branches1_2_Paths <- getRelatedPaths(keggidxs = topDiffMets_branches
                                                  a = medsG1KEGGIDs_undisc[!is.na(names(medsG1KEGGIDs_undisc))], 
                                                  b = medsG2KEGGIDs_undisc[!is.na(names(medsG2KEGGIDs_undisc))])
 
+doORA <- function(diffMetObjkt, org = NULL, alpha = 0.05){
+        if(!require(KEGGREST)) install.packages("KEGGREST")
+        library(KEGGREST)
+        if(is.null(org)){
+                paths <- keggList("pathway")
+        }else{
+                paths <- keggList("pathway", org)
+        }
+        diffMet <- diffMetObjkt[!is.na(diffMetObjkt)]
+        diffMet <- sapply("cpd:", diffMet, FUN = paste, sep = "")[, 1]
+        totPaths <- unique(unlist(sapply(diffMet, keggLink, target = "pathway")))
+        if(!is.null(org)){
+                totPaths <- totPaths[gsub("map", replacement = org, totPaths) %in% names(paths)]
+        }
+        compsPerPath <- sapply(totpaths, keggLink, target = "compound")
+        allComps <- unique(unlist(compsPerPath))
+        allCompsLen <- length(allComps)
+        contMat <- function(x) {
+                compsInPath <- length(x)
+                mat <- matrix(c(compsInPath, allCompsLen - compsInPath, sum(diffMet %in% x), sum(!diffMet %in% x)), 
+                              ncol = 2, 
+                              nrow = 2,
+                              dimnames = list(c("in_path", "not_in_path"),
+                                              c("met_not_interest", "met_in_interest")))
+                return(mat)
+        }
+        contMatsPaths <- lapply(compsPerPath, contMat)
+        fishRes <- lapply(contMatsPaths, fisher.test)
+        filt <- function(x) x$p.value <= alpha
+        vecTrue <- unlist(lapply(fishRes, filt))
+        sign <- fishRes[vecTrue]
+        pVals <- sapply(sign, function(f) f$p.value)
+        signMat <- cbind.data.frame(pathwaylist[names(pathwaylist) %in% names(pVals)], pVals)
+        colnames(signMat) <- c("Pathways", "p.values")
+        return(signMat)
+}
+
+ORA_C1_2 <- doORA(topDiffMets_branches1_2_undisc_KEGGIDs, org = "pae")
+
+ORA_C1_2[match(gsub(" -.*", rownames(topDiffMets_branches1_2_Paths$`Representation of Pathways`), replacement = ""), ORA_C1_2$Pathways), ]
+
+alpha = 0.05
+org = "pae"
+
+paePaths <- keggList("pathway", org)        
+        
+
+diffMet <- topDiffMets_branches1_2_undisc_KEGGIDs[!is.na(topDiffMets_branches1_2_undisc_KEGGIDs)]
+diffMet <- sapply("cpd:", diffMet, FUN = paste, sep = "")[, 1]
+totPaths <- unique(unlist(sapply(diffMet, keggLink, target = "pathway")))
+FUN <- function(x) paste("path:", gsub("pae", x, replacement = "map"), sep = "")
+totpaths <- sapply(topDiffMets_branches1_2_Paths$`Pathway Counts`$path_counts, FUN = FUN)
+compsPerPath <- sapply(totpaths, keggLink, target = "compound")
+allComps <- unique(unlist(compsPerPath))
+allCompsLen <- length(allComps)
+contMat <- function(x) {
+        compsInPath <- length(x)
+        mat <- matrix(c(compsInPath, allCompsLen - compsInPath, sum(diffMet %in% x), sum(!diffMet %in% x)), 
+                      ncol = 2, 
+                      nrow = 2,
+                      dimnames = list(c("in_path", "not_in_path"),
+                                      c("met_not_interest", "met_in_interest")))
+        return(mat)
+}
+contMatsPaths <- lapply(compsPerPath, contMat)
+fishRes <- lapply(contMatsPaths, fisher.test)
+filt <- function(x) x$p.value <= alpha
+vecTrue <- unlist(lapply(fishRes, filt))
+sign <- fishRes[vecTrue]
+pVals <- sapply(sign, function(f) f$p.value)
+signMat <- cbind.data.frame(pathwaylist[names(pathwaylist) %in% names(pVals)], pVals)
+colnames(signMat) <- c("Pathways", "p.values")
+
 ########################################################################################################################################################
 #
 # Divide clusters 1 and 2 in its 2 major subclusters and determine differential metabolites between the subclusters (Mann Whitney test, alpha = 0.05), 
@@ -452,6 +525,10 @@ topDiffMets_branches1.1_1.2_Paths <- getRelatedPaths(keggidxs = topDiffMets_bran
                                                      a = medsG1.1KEGGIDs[!is.na(names(medsG1.1KEGGIDs))], 
                                                      b = medsG1.2KEGGIDs[!is.na(names(medsG1.2KEGGIDs))])
 
+ORA_C1.1_1.2 <- doORA(topDiffMets_branches1.1_1.2_KEGGIDs, org = "pae")
+
+ORA_C1.1_1.2[match(gsub(" -.*", rownames(topDiffMets_branches1.1_1.2_Paths$`Representation of Pathways`), replacement = ""), ORA_C1.1_1.2$Pathways), ]
+
 # Cluster 2
 
 HCA_ccmn_clust2 <- hclust(dist(ccmn_clust2, "euclidean"), "ward.D")
@@ -500,6 +577,11 @@ topDiffMets_branches2.1_2.2_Paths <- getRelatedPaths(keggidxs = topDiffMets_bran
                                                      a = medsG2.1KEGGIDs[!is.na(names(medsG2.1KEGGIDs))], 
                                                      b = medsG2.2KEGGIDs[!is.na(names(medsG2.2KEGGIDs))])
 
+ORA_C2.1_2.2 <- doORA(topDiffMets_branches2.1_2.2_KEGGIDs, org = "pae")
+
+ORA_C2.1_2.2[match(gsub(" -.*", rownames(topDiffMets_branches2.1_2.2_Paths$`Representation of Pathways`), replacement = ""), ORA_C2.1_2.2$Pathways), ]
+
+
 ########################################################################################################################################################
 #
 # Substitute names of differential metabolites by the KEGG indexes and build a table with differential metabolites between clusters 1 and 2, 
@@ -527,4 +609,8 @@ colnames(diffMets) <- c("1 and 2", "1.1 and 1.2", "2.1 and 2.2")
 diffMets_oldGood <- diffMets
 save(diffMets_oldGood, file = "diffMets_oldGood.RData")
 write.csv(diffMets, file = "diffMets_allClusts_oldGood.csv")
+
+write.csv(topDiffMets_branches1_2_Paths$`Representation of Pathways`, file = "pathRep1_2_old.csv")
+write.csv(topDiffMets_branches1.1_1.2_Paths$`Representation of Pathways`, file = "pathRep1.1_1.2_old.csv")
+write.csv(topDiffMets_branches2.1_2.2_Paths$`Representation of Pathways`, file = "pathRep2.1_2.2_old.csv")
 
