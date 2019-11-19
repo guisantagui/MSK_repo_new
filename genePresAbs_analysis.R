@@ -153,6 +153,9 @@ save(gene_enz_tab, file = "gene_enz_tab.RData")
 
 # Remove PA14 and the genes that are in all strains and keep only enzymatic ones.
 gene_enz_tab_filt <- gene_tab_filt[, sapply(colnames(gene_tab_filt), grepl, pattern = "EC")]
+gene_enz_tab_filt <- gene_enz_tab_filt[, colnames(gene_enz_tab_filt) != "Late competence protein ComEC, DNA transport"]
+gene_enz_tab_filt <- gene_enz_tab_filt[, colnames(gene_enz_tab_filt) != "hypothetical protein APECO1_2271"]
+gene_enz_tab_filt <- gene_enz_tab_filt[, colnames(gene_enz_tab_filt) != "RNA polymerase ECF-type sigma factor"]
 save(gene_enz_tab_filt, file = "gene_enz_tab_filt.RData")
 
 ####################
@@ -288,6 +291,10 @@ fish_oldGood_allGen <- doFisher(contTab_oldGood_allGenes, metClusts_oldGood)    
 fish_oldGood_filt <- doFisher(contTab_oldGood_filt, metClusts_oldGood[2:length(metClusts_oldGood)])         # 139 sign genes
 fish_oldGood_enz <- doFisher(contTab_oldGood_enz, metClusts_oldGood)                                        # 12 sign genes
 fish_oldGood_filtEnz <- doFisher(contTab_oldGood_filtEnz, metClusts_oldGood[2:length(metClusts_oldGood)])   # 9 sign genes
+save(fish_oldGood_allGen, file = "fish_oldGood_allGen.RData")
+save(fish_oldGood_filt, file = "fish_oldGood_filt.RData")
+save(fish_oldGood_enz, file = "fish_oldGood_enz.RData")
+save(fish_oldGood_filtEnz, file = "fish_oldGood_allGen.RData")
 
 ####################
 #
@@ -321,7 +328,7 @@ heatmap.2(mannWhitPerGene_oldGood_allGenes$z.score, Rowv = T, Colv = T,
           breaks = 101, 
           notecol = NULL, 
           trace = "none", 
-          xlab = "Strains", 
+          xlab = "Metabolites", 
           ylab = "Genes", 
           main = "Correlation Accessory genome and metabolome", 
           margins = c(6, 13), 
@@ -350,7 +357,7 @@ heatmap.2(mannWhitPerGene_oldGood_filt$z.score, Rowv = T, Colv = T,
           breaks = 101, 
           notecol = NULL, 
           trace = "none", 
-          xlab = "Strains", 
+          xlab = "Metabolites", 
           ylab = "Genes", 
           main = "Correlation Accessory genome and metabolome", 
           margins = c(6, 13), 
@@ -379,7 +386,7 @@ heatmap.2(mannWhitPerGene_oldGood_enz$z.score, Rowv = T, Colv = T,
           breaks = 101, 
           notecol = NULL, 
           trace = "none", 
-          xlab = "Strains", 
+          xlab = "Metabolites", 
           ylab = "Genes", 
           main = "Correlation Accessory genome and metabolome", 
           margins = c(6, 13), 
@@ -399,7 +406,7 @@ heatmap.2(mannWhitPerGene_oldGood_enz$z.score, Rowv = T, Colv = T,
           })
 dev.off()
 
-tiff("gene_met_corr_oldGood_filtEnz.tiff", width = 5000, height = 15000, units = "px", pointsize = 50)
+tiff("gene_met_corr_oldGood_filtEnz.tiff", width = 6000, height = 5000, units = "px", pointsize = 50)
 heatmap.2(mannWhitPerGene_oldGood_filtEnz$z.score, Rowv = T, Colv = T, 
           distfun = function(x) dist(x, method = "euclidean"), 
           #density.info = "none", 
@@ -408,10 +415,10 @@ heatmap.2(mannWhitPerGene_oldGood_filtEnz$z.score, Rowv = T, Colv = T,
           breaks = 101, 
           notecol = NULL, 
           trace = "none", 
-          xlab = "Strains", 
+          xlab = "Metabolites", 
           ylab = "Genes", 
-          main = "Correlation Accessory genome and metabolome", 
-          margins = c(6, 13), 
+          main = "Correlation accessory enzymatic genome and metabolome", 
+          margins = c(8, 50), 
           keysize = 1,
           sepwidth = c(0.1, 0.05),
           key.xtickfun=function() {
@@ -502,6 +509,7 @@ presAbsC1_2Genes_old_filtEnz <- gene_enz_tab_filt[, C1_2Genes_old_filtEnz]
 clustOrdC1_2_old <- names(sort(metClusts_oldGood[2:length(metClusts_oldGood)]))
 presAbsC1_2Genes_old_filtEnz <- t(presAbsC1_2Genes_old_filtEnz[clustOrdC1_2_old, ])
 save(presAbsC1_2Genes_old_filtEnz, file = "presAbsC1_2Genes_old_filtEnz.RData")
+save(C1_2Genes_old_filtEnz, file = "C1_2Genes_old_filtEnz.RData")
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/presAbsC1_2Genes_old_filtEnz.RData")
 
 tiff("minedDiffGenes_old_filtEnz.tiff", width = 7000, height = 5000, units = "px", pointsize = 100)
