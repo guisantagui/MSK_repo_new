@@ -215,9 +215,6 @@ for(i in 1:length(wilcres_undisc)){
         names(is_different_undisc)[i] <- names(wilcres_undisc)[i]
 }
 names(pvals_undisc1_2) <- names(wilcres_undisc[is_different_undisc])
-pvals_undisc1_2 <- rmAmbig(pvals_undisc1_2)
-
-topDiffMets_branches1_2_undisc <- rev(sort(abs(HCA_ccmn_median_group1[is_different_undisc] - HCA_ccmn_median_group2[is_different_undisc])))
 
 # Remove those with _? ---> Those are the ones that we're not sure about their ID.
 
@@ -225,6 +222,12 @@ rmAmbig <- function(topDiffMets){
         removed <- topDiffMets[-grep("_?", names(topDiffMets), fixed = T)] 
         return(removed)
 }
+
+pvals_undisc1_2 <- rmAmbig(pvals_undisc1_2)
+
+topDiffMets_branches1_2_undisc <- rev(sort(abs(HCA_ccmn_median_group1[is_different_undisc] - HCA_ccmn_median_group2[is_different_undisc])))
+
+
 
 topDiffMets_branches1_2_undisc <- rmAmbig(topDiffMets_branches1_2_undisc)
 
@@ -589,4 +592,54 @@ write.csv(diffMets, file = "diffMets_allClusts_oldGood.csv")
 write.csv(topDiffMets_branches1_2_Paths$`Representation of Pathways`, file = "pathRep1_2_old.csv")
 write.csv(topDiffMets_branches1.1_1.2_Paths$`Representation of Pathways`, file = "pathRep1.1_1.2_old.csv")
 write.csv(topDiffMets_branches2.1_2.2_Paths$`Representation of Pathways`, file = "pathRep2.1_2.2_old.csv")
+
+ccmn_norm_mets_good_old_diffMets <- ccmn_norm_mets[, dictionary$Consensus[match(unique(as.character(diffMets_oldGood)[!is.na(as.character(diffMets_oldGood))]), 
+                                                                                dictionary$`KEGG IDs`)]]
+
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs/Diff_metabolites_analysis/metabo_functions.R")
+
+getStrainMedian <- function(normMets){
+        normMetsMedians <- matrix(nrow = nrow(normMets)/3, ncol = ncol(normMets))
+        for(j in 1:nrow(normMetsMedians)){
+                for(i in 1:ncol(normMetsMedians)){
+                        normMetsMedians[j, i] <- median(normMets[(1+3*(j-1)):(3*j), i])
+                }
+        }
+        rownames(normMetsMedians) <- unique(gsub("\\_.*", "", rownames(normMets)))
+        colnames(normMetsMedians) <-colnames(normMets)
+        return(normMetsMedians)
+}
+
+ccmn_norm_mets_good_old_diffMets_quant <- quantNorm(ccmn_norm_mets_good_old_diffMets)
+
+ccmn_norm_mets_good_old_diffMets_quantMeds <- getStrainMedian(ccmn_norm_mets_good_old_diffMets_quant)
+
+
+
+tiff("heatmapCCMN_diffMets_quant_oldGood.tiff", width = 3000, height = 3000, units = "px", pointsize = 50)
+
+heatmap.2(as.matrix(t(ccmn_norm_mets_good_old_diffMets_quantMeds)), Rowv = T, distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
+          col = redgreen(75), breaks = 76, ColSideColors = unique(Cols), notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Metabolites", main = "CCMN normalized, quantile-normalized, only differential metabolites", margins = c(7, 16), 
+          cex.main = 20,
+          keysize = 0.7,
+          cexRow = 1,
+          cexCol = 1.2,
+          cellnote = round(as.matrix(t(ccmn_norm_mets_good_old_diffMets_quantMeds)), 2),
+          notecex = 0.7,
+          key.xtickfun=function() {
+                  cex <- par("cex")*par("cex.axis")
+                  side <- 1
+                  line <- 0
+                  col <- par("col.axis")
+                  font <- par("font.axis")
+                  mtext("low", side=side, at=0, adj=0,
+                        line=line, cex=cex, col=col, font=font)
+                  mtext("high", side=side, at=1, adj=1,
+                        line=line, cex=cex, col=col, font=font)
+                  return(list(labels=FALSE, tick=FALSE))
+          })
+
+dev.off()
 
