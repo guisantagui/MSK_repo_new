@@ -422,3 +422,37 @@ confusionMatrix(data = bstClassesRFEEnz, testingEnz$swarmData)
 
 # The enzymatic genes obtained are symilar to the ones obtained when classifying the strains in the 
 # two major clusters.
+
+
+
+####################################################################################################################
+####################################################################################################################
+#   Multivariate analysis
+####################################################################################################################
+####################################################################################################################
+
+if(!require(ropls)) BiocManager::install("ropls")
+library(ropls)
+
+swarmMeansRearr <- swarmMeans
+names(swarmMeansRearr) <- gsub(".*_", names(swarmMeans), replacement = "")
+swarmMeansRearr <- swarmMeansRearr[names(swarmMeansRearr) %in% strainNames]
+swarmMeansRearr <- swarmMeansRearr[match(strainNames, names(swarmMeansRearr))]
+swarmMeansRearr <- swarmMeansRearr[!is.na(swarmMeansRearr)]
+
+ccmn_norm_mets_good_old <- cbind.data.frame(ccmn_norm_mets_good_old, 
+                                            swarmMeansRearr[match(gsub("\\_.*|(PA14).*", 
+                                                                       rownames(ccmn_norm_mets_good_old), 
+                                                                       rep = "\\1"), 
+                                                                  names(swarmMeansRearr))])
+
+colnames(ccmn_norm_mets_good_old)[ncol(ccmn_norm_mets_good_old)] <- "swarmQuant"
+
+ccmnNormPCA <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)])
+swarmData <- ccmn_norm_mets_good_old$swarmData
+plot(ccmnNormPCA,
+     typeVc = "x-score",
+     parAsColFcVn = swarmData)
+
+ccmnNormPLSQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmQuant)
+ccmnNormPLSQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmData)
