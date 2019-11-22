@@ -13,6 +13,9 @@ setwd("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/oldDataGood"
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/normMetAnal/oldDataGood/ccmn_norm_mets_good_old.RData")
 ccmn_norm_mets <- ccmn_norm_mets_good_old
 
+#Load functions
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/diffMetAnal_functions.R")
+
 ########################################################################################################################################################
 #
 # Apply Hierarchical Clustering Analysis
@@ -99,11 +102,6 @@ compKEGGIDs <- dictionary$`KEGG IDs`[match(colnames(ccmn_norm_mets), dictionary$
 newMetNames <- dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)]
 colnames(ccmn_norm_mets) <- newMetNames
 ccmn_norm_mets <- ccmn_norm_mets[, !is.na(colnames(ccmn_norm_mets))]
-
-quantNorm <- function(m){
-        meanrank <- function(x){rank(x)/length(x)}
-        apply(m, 2, meanrank)
-}
 
 ccmn_norm_mets_quant <- quantNorm(ccmn_norm_mets)
 
@@ -218,11 +216,6 @@ names(pvals_undisc1_2) <- names(wilcres_undisc[is_different_undisc])
 
 # Remove those with _? ---> Those are the ones that we're not sure about their ID.
 
-rmAmbig <- function(topDiffMets){
-        removed <- topDiffMets[-grep("_?", names(topDiffMets), fixed = T)] 
-        return(removed)
-}
-
 pvals_undisc1_2 <- rmAmbig(pvals_undisc1_2)
 
 topDiffMets_branches1_2_undisc <- rev(sort(abs(HCA_ccmn_median_group1[is_different_undisc] - HCA_ccmn_median_group2[is_different_undisc])))
@@ -278,116 +271,6 @@ pathwaylist <- keggList("pathway")
 if(!require(limma)) install.packages("limma")
 library(limma)
 
-
-
-getRelatedPaths <- function(keggidxs, org = NULL, a = NULL, b = NULL){
-        library("KEGGREST")
-        mets <- keggList("compound")
-        keggindexes <- list()
-        
-        if(is.null(org) == F){
-                pathlist <- keggList("pathway", org)
-        }else{pathlist <- keggList("pathway")}
-        pathways <- list()
-        path_counts <- c()
-        for(j in 1:length(keggidxs)){
-                paths <- keggLink("pathway", keggidxs[j])
-                if(length(paths) > 0 & is.null(org) == F){
-                        paths <- sapply(paths, gsub, pattern = "map", replacement = org)
-                        pathways[[j]] <- paths[paths %in% names(pathlist)]
-                }
-                else if(length(paths) > 0 & is.null(org) ==T){
-                        pathways[[j]] <- paths
-                }else{pathways[[j]] <- paste("Any pathway found for", keggidxs[j])}
-                names(pathways)[j] <- keggidxs[j]
-                for(k in 1:length(pathways[[j]])){
-                        if(is.na(strsplit(pathways[[j]], ":")[[k]][2])){
-                                path_counts <- path_counts
-                        }else{path_counts <- c(path_counts, strsplit(pathways[[j]], ":")[[k]][2])}
-                        
-                }
-        }
-        path_counts <- as.data.frame(table(path_counts))
-        path_counts[, "Pathways"] <- NA
-        for(l in 1:length(path_counts[, 1])){
-                path_counts[l, 3] <- pathlist[[paste("path:", path_counts[l,1], sep = "")]]
-        }
-        path_counts <- path_counts[order(path_counts$Freq, decreasing = T), ]
-        rownames(path_counts) <- c()
-        
-        if(!is.null(a) & !is.null(b) == T){
-                pathdif <- cbind("Cluster 1" = a, "Cluster 2" = b)
-                pathdif <- pathdif[match(keggidxs, rownames(pathdif)), ]
-                numbPaths <- c()
-                for(i in 1:length(keggidxs)){
-                        numbPaths[i] <- length(pathways[[i]])
-                }
-                pathdif <- cbind(pathdif, "Number of Related Pathways" = numbPaths)
-                
-                pathdif <- pathdif[rep(1:nrow(pathdif), times = pathdif[, 3]), ]
-                path_indexes <- c()
-                path_names <- c()
-                for(i in 1:length(pathways)){
-                        for(j in 1:length(pathways[[i]])){
-                                path_indexes <- c(path_indexes, pathways[[i]][j])
-                                path_names <- c(path_names, pathlist[pathways[[i]][j]])
-                        }
-                }
-                path_names[which(is.na(path_names))] <- path_indexes[which(is.na(path_names))]
-                
-                pathdif <- cbind.data.frame(pathdif, "Pathway Indexes" = path_indexes)
-                pathdif <- cbind.data.frame(pathdif, "Pathway Names" = path_names)
-                
-                compPerPath <- list()
-                if(!is.null(org) == T){
-                        for(ii in 1:length(unique(pathdif[, 4]))){
-                                compPerPath[[ii]] <- keggLink("compound", as.character(unique(sapply(pathdif[, 4], gsub, pattern = org, replacement = "map"))[ii]))
-                        } 
-                }
-                if(is.null(org) == T){
-                        for(ii in 1:length(unique(pathdif[, 4]))){
-                                compPerPath[[ii]] <- keggLink("compound", as.character(unique(pathdif[, 4])[ii]))
-                        }
-                }
-                names(compPerPath) <- as.character(unique(pathdif[, 5]))
-                reprPath <- c()
-                comp_in_path <- c()
-                for(ii in 1:length(compPerPath)){
-                        reprPath[ii] <- (length(compPerPath[[ii]][compPerPath[[ii]] %in% paste("cpd:", names(pathways), sep = "")])/length(compPerPath[[ii]]))*100
-                        comp_in_path[ii] <- paste(compPerPath[[ii]][compPerPath[[ii]] %in% paste("cpd:", names(pathways), sep = "")], collapse = " ")
-                }
-                names(reprPath) <- names(compPerPath)
-                
-                pathdif_ord <- pathdif[order(pathdif[, 5]),]
-                
-                pos <- c()
-                neg <- c()
-                medPathDif <- c()
-                for(ii in 1:length(unique(path_indexes))){
-                        submat <- pathdif_ord[which(pathdif_ord[, 4] == unique(path_indexes)[ii]), c(1, 2)]
-                        pos[ii] <- length(which((submat[, 1] - submat[, 2]) > 0))
-                        neg[ii] <- length(which((submat[, 1] - submat[, 2]) < 0))
-                        medPathDif[ii] <- median(submat[, 1] - submat[, 2])
-                }
-                names(pos) <- unique(path_indexes)
-                names(neg) <- unique(path_indexes)
-                names(medPathDif) <- unique(path_indexes)
-                
-                reprPath <- cbind.data.frame(reprPath, pos, neg, medPathDif, comp_in_path)
-                
-                reprPath <- reprPath[order(reprPath[, 1], decreasing = T), ]
-                
-                colnames(reprPath) <- c("% of Representation", "Higher in Clust 1", "Higher in Clust 2", "Median of Difference", "Comp. Indx.")
-                
-                return(list("Pathways per Metabolite" = pathways, "Pathway Counts" = path_counts, 
-                            "Mets & Rel. Pathways" = pathdif, "Representation of Pathways"= reprPath))
-        }else{
-                return(list("Pathways per Metabolite" = pathways, 
-                            "Pathway Counts" = path_counts))
-        }
-        
-}
-
 medsG1KEGGIDs_undisc <- HCA_ccmn_quant_median_group1[is_different_undisc]
 medsG2KEGGIDs_undisc <- HCA_ccmn_quant_median_group2[is_different_undisc]
 
@@ -398,43 +281,6 @@ topDiffMets_branches1_2_Paths <- getRelatedPaths(keggidxs = topDiffMets_branches
                                                  org = "pae",
                                                  a = medsG1KEGGIDs_undisc[!is.na(names(medsG1KEGGIDs_undisc))], 
                                                  b = medsG2KEGGIDs_undisc[!is.na(names(medsG2KEGGIDs_undisc))])
-
-doORA <- function(diffMetObjkt, allMetsObjkt, org = NULL, alpha = 0.05){
-        if(!require(KEGGREST)) install.packages("KEGGREST")
-        library(KEGGREST)
-        if(is.null(org)){
-                paths <- keggList("pathway")
-        }else{
-                paths <- keggList("pathway", org)
-        }
-        diffMet <- diffMetObjkt[!is.na(diffMetObjkt)]
-        diffMet <- sapply("cpd:", diffMet, FUN = paste, sep = "")[, 1]
-        totPaths <- unique(unlist(sapply(allMetsObjkt, keggLink, target = "pathway")))
-        if(!is.null(org)){
-                totPaths <- totPaths[gsub("map", replacement = org, totPaths) %in% names(paths)]
-        }
-        compsPerPath <- sapply(totPaths, keggLink, target = "compound")
-        allComps <- unique(unlist(compsPerPath))
-        allCompsLen <- length(allComps)
-        contMat <- function(x) {
-                compsInPath <- length(x)
-                mat <- matrix(c(compsInPath, allCompsLen - compsInPath, sum(diffMet %in% x), sum(!diffMet %in% x)), 
-                              ncol = 2, 
-                              nrow = 2,
-                              dimnames = list(c("in_path", "not_in_path"),
-                                              c("met_not_interest", "met_in_interest")))
-                return(mat)
-        }
-        contMatsPaths <- lapply(compsPerPath, contMat)
-        fishRes <- lapply(contMatsPaths, fisher.test)
-        filt <- function(x) x$p.value <= alpha
-        vecTrue <- unlist(lapply(fishRes, filt))
-        sign <- fishRes[vecTrue]
-        pVals <- sapply(sign, function(f) f$p.value)
-        signMat <- cbind.data.frame(pathwaylist[names(pathwaylist) %in% names(pVals)], pVals)
-        colnames(signMat) <- c("Pathways", "p.values")
-        return(signMat)
-}
 
 allMets <- dictionary$`KEGG IDs`[!grepl("_?", dictionary$Consensus, fixed = T)][!is.na(dictionary$`KEGG IDs`[!grepl("_?", dictionary$Consensus, fixed = T)])]
 
@@ -596,19 +442,9 @@ write.csv(topDiffMets_branches2.1_2.2_Paths$`Representation of Pathways`, file =
 ccmn_norm_mets_good_old_diffMets <- ccmn_norm_mets[, dictionary$Consensus[match(unique(as.character(diffMets_oldGood)[!is.na(as.character(diffMets_oldGood))]), 
                                                                                 dictionary$`KEGG IDs`)]]
 
-source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs/Diff_metabolites_analysis/metabo_functions.R")
 
-getStrainMedian <- function(normMets){
-        normMetsMedians <- matrix(nrow = nrow(normMets)/3, ncol = ncol(normMets))
-        for(j in 1:nrow(normMetsMedians)){
-                for(i in 1:ncol(normMetsMedians)){
-                        normMetsMedians[j, i] <- median(normMets[(1+3*(j-1)):(3*j), i])
-                }
-        }
-        rownames(normMetsMedians) <- unique(gsub("\\_.*", "", rownames(normMets)))
-        colnames(normMetsMedians) <-colnames(normMets)
-        return(normMetsMedians)
-}
+
+
 
 ccmn_norm_mets_good_old_diffMets_quant <- quantNorm(ccmn_norm_mets_good_old_diffMets)
 
