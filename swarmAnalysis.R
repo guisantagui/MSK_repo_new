@@ -276,18 +276,24 @@ tab_rfeSwarm <- generateResultsTable(
 if(!require(dendextend)) install.packages("dendextend")
 library(dendextend)
 
+if(!require(ggdendro)) install.packages("ggdendro")
+library(ggdendro)
+
 if(!require(ggplot2)) install.packages("ggplot2")
 library(ggplot2)
 
 ccmnNormMeds <- getStrainMedian(ccmn_norm_mets_good_old[, -ncol(ccmn_norm_mets_good_old)])
-ccmnNormMeds <- ccmnNormMeds[-1, ]
-rownames(ccmnNormMeds)[1] <- "PA14"
+
+swarmForDend <- ccmn_norm_mets_good_old$swarmData
+names(swarmForDend) <- gsub("_.*", rownames(ccmn_norm_mets_good_old), replacement = "")
+
+swarmForDend <- swarmForDend[match(unique(names(swarmForDend)), names(swarmForDend))]
 
 dend <- ccmnNormMeds %>% dist(method = "euclidean") %>%
         hclust(method = "ward.D") 
 
 df_ccmnNormMeds <- data.frame(Strain = rownames(ccmnNormMeds),
-                              SwarmData = as.character(swarmBin))
+                              SwarmData = as.character(swarmForDend))
 
 dend_hcData <- dendro_data(dend, type="rectangle")
 
