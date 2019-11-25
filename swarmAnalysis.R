@@ -456,3 +456,154 @@ plot(ccmnNormPCA,
 
 ccmnNormPLSQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmQuant)
 ccmnNormPLSQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmData)
+
+ccmnNormOPLSDAQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
+                            ccmn_norm_mets_good_old$swarmQuant, 
+                            predI = 1, 
+                            orthoI = NA,
+                            subset = as.vector(inTrain))
+ccmnNormOPLSDAQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
+                           ccmn_norm_mets_good_old$swarmData, 
+                           predI = 1, 
+                           orthoI = NA,
+                           subset = as.vector(inTrain))
+
+table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)], fitted(ccmnNormOPLSDAQual))
+
+table(ccmn_norm_mets_good_old$swarmData[-as.vector(inTrain)],
+      predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[-as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
+# Accuracy of 0.95 with the testing dataset
+
+OPLSDAQuantLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQuant)[, 1],
+                          getLoadingMN(ccmnNormOPLSDAQuant, orthoL = T))
+colnames(OPLSDAQuantLoads)[1] <- "p1"
+OPLSDAQualLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQual)[, 1],
+                         getLoadingMN(ccmnNormOPLSDAQual, orthoL = T))
+colnames(OPLSDAQualLoads)[1] <- "p1"
+
+getExtremVals <- function(loadsMat, n = 5){
+        extrVals <- list()
+        for(i in 1:ncol(loadsMat)){
+                extrVals[[i]] <- c(head(sort(loadsMat[, i]), n),
+                                   tail(sort(loadsMat[, i]), n)) 
+        }
+        names(extrVals) <- colnames(loadsMat)
+        uniqueExtrVars <- unique(unlist(lapply(extrVals, names)))
+        return(list("extremeVals" = extrVals, 
+                    "uniqueExtremeVars" = uniqueExtrVars))
+}
+
+extremValsOPLSDAQual <- getExtremVals(OPLSDAQualLoads, n = 3)
+extremValsOPLSDAQuant <- getExtremVals(OPLSDAQuantLoads, n = 3)
+
+OPLSDAQualResult <- dictionary$Consensus[match(extremValsOPLSDAQual$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
+OPLSDAQualResult <- OPLSDAQualResult[!is.na(OPLSDAQualResult)]
+names(OPLSDAQualResult) <- OPLSDAQualResult
+OPLSDAQualResult <- rmAmbig(OPLSDAQualResult)
+OPLSDAQualResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQualResult, dictionary$Consensus)]
+OPLSDAQualResultKEGGIDs <- OPLSDAQualResultKEGGIDs[!is.na(OPLSDAQualResultKEGGIDs)]
+
+OPLSDAQuantResult <- dictionary$Consensus[match(extremValsOPLSDAQuant$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
+OPLSDAQuantResult <- OPLSDAQuantResult[!is.na(OPLSDAQuantResult)]
+names(OPLSDAQuantResult) <- OPLSDAQuantResult
+OPLSDAQuantResult <- rmAmbig(OPLSDAQuantResult)
+OPLSDAQuantResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQuantResult, dictionary$Consensus)]
+OPLSDAQuantResultKEGGIDs <- OPLSDAQuantResultKEGGIDs[!is.na(OPLSDAQuantResultKEGGIDs)]
+
+ORA_OPLSDAQual <- doORA(OPLSDAQualResultKEGGIDs, allMets, org = "pae")
+ORA_OPLSDAQuant <- doORA(OPLSDAQuantResultKEGGIDs, allMets, org = "pae")
+
+analysis.OPLSDAQual <- enrich(
+        compounds = OPLSDAQualResultKEGGIDs,
+        data = fella.data,
+        method = "diffusion",
+        approx = "normality")
+
+analysis.OPLSDAQual %>%
+        getInput %>%
+        getName(data = fella.data)
+getExcluded(analysis.OPLSDAQual)
+
+g_OPLSDAQual <- generateResultsGraph(
+        object = analysis.OPLSDAQual,
+        method = "diffusion",
+        nlimit = 350,
+        data = fella.data)
+g_OPLSDAQual
+
+tiff("FELLA_OPLSDAQual.tiff", width = 4000, height = 4000, units = "px", pointsize = 50)
+plotGraph(
+        g_OPLSDAQual
+        #vertex.label.cex = vertex.label.cex)
+)
+dev.off()
+
+tab_OPLSDAQual <- generateResultsTable(
+        object = analysis.OPLSDAQual,
+        data = fella.data,
+        method = "diffusion",
+        nlimit = 500)
+
+analysis.OPLSDAQuant <- enrich(
+        compounds = OPLSDAQuantResultKEGGIDs,
+        data = fella.data,
+        method = "diffusion",
+        approx = "normality")
+
+analysis.OPLSDAQuant %>%
+        getInput %>%
+        getName(data = fella.data)
+getExcluded(analysis.OPLSDAQuant)
+
+g_OPLSDAQuant <- generateResultsGraph(
+        object = analysis.OPLSDAQuant,
+        method = "diffusion",
+        nlimit = 350,
+        data = fella.data)
+g_OPLSDAQuant
+
+tiff("FELLA_OPLSDAQuant.tiff", width = 4000, height = 4000, units = "px", pointsize = 50)
+plotGraph(
+        g_OPLSDAQuant
+        #vertex.label.cex = vertex.label.cex)
+)
+dev.off()
+
+tab_OPLSDAQuant <- generateResultsTable(
+        object = analysis.ORA_OPLSDAQuant,
+        data = fella.data,
+        method = "diffusion",
+        nlimit = 500)
+
+
+grep("*", dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)], fixed = T)
+
+dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)][-grep("*", dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)], fixed = T)]
+
+# See overlaps
+if(!require(Vennerable)) install.packages("Vennerable", repos="http://R-Forge.R-project.org")
+library(Vennerable)
+
+overlapPathsORA <- list("ORA RFE" = ORA_rfeResults[, 1], 
+                        "ORA OPLS-DA quantitative" = ORA_OPLSDAQuant[, 1], 
+                        "ORA OPLS-DA qualitative" = ORA_OPLSDAQuant[, 1])
+
+vennPathsORA <- Venn(Sets = overlapPathsORA)
+tiff(filename = "overlapPathsORA.tiff", height = 1400, width = 1800, res = 300)
+plot(vennPathsORA, doWeights = T, type = "circles")
+dev.off()
+
+tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3]
+
+overlapPathsFELLA <- list("FELLA RFE" = tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3], 
+                          "FELLA OPLS-DA quantitative" = tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]), 3], 
+                          "FELLA OPLS-DA qualitative" = tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]), 3])
+
+vennPathsFELLA <- Venn(Sets = overlapPathsFELLA)
+tiff(filename = "overlapPathsFELLA.tiff", height = 1400, width = 1800, res = 300)
+plot(vennPathsFELLA, doWeights = T, type = "circles")
+dev.off()
+
+tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]),]
+tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]),]
+tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]),]
