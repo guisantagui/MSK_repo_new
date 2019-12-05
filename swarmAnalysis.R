@@ -207,6 +207,8 @@ ORA_rfeResults <- doORA(diffMetObjkt = rfeResultKEGGIDs,
                         allMetsObjkt = allMets,
                         org = "pae")
 
+write.csv(ORA_rfeResults, file = "ORA_rfeResults.csv")
+
 # With FELLA
 graph <- buildGraphFromKEGGREST(
         organism = "pae",
@@ -268,7 +270,7 @@ tab_rfeSwarm <- generateResultsTable(
         method = "diffusion",
         nlimit = 500)
 
-
+write.csv(tab_rfeSwarm, file = "tab_rfeSwarm.csv")
 # Same pathways than the ones obtained in the ORA with differential metabolites
 
 # Lets make dendogram with swarm in label
@@ -463,18 +465,28 @@ plot(ccmnNormPCA,
 ccmnNormPLSQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmQuant)
 ccmnNormPLSQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmData)
 
+tiff(filename = "ccmnNormOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
 ccmnNormOPLSDAQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
                             ccmn_norm_mets_good_old$swarmQuant, 
                             predI = 1, 
-                            orthoI = NA,
-                            subset = as.vector(inTrain))
+                            orthoI = NA#,
+                            #subset = as.vector(inTrain)
+                            )
+dev.off()
+
+tiff(filename = "ccmnNormOPLSDAQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
 ccmnNormOPLSDAQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
                            ccmn_norm_mets_good_old$swarmData, 
                            predI = 1, 
-                           orthoI = NA,
-                           subset = as.vector(inTrain))
+                           orthoI = NA#,
+                           #subset = as.vector(inTrain),
+                           )
+dev.off()
 
 table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)], fitted(ccmnNormOPLSDAQual))
+
+table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)],
+      predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
 
 table(ccmn_norm_mets_good_old$swarmData[-as.vector(inTrain)],
       predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[-as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
@@ -519,6 +531,9 @@ OPLSDAQuantResultKEGGIDs <- OPLSDAQuantResultKEGGIDs[!is.na(OPLSDAQuantResultKEG
 ORA_OPLSDAQual <- doORA(OPLSDAQualResultKEGGIDs, allMets, org = "pae")
 ORA_OPLSDAQuant <- doORA(OPLSDAQuantResultKEGGIDs, allMets, org = "pae")
 
+write.csv(ORA_OPLSDAQual, file = "ORA_OPLSDAQual.csv")
+write.csv(ORA_OPLSDAQuant, file = "ORA_OPLSDAQuant.csv")
+
 analysis.OPLSDAQual <- enrich(
         compounds = OPLSDAQualResultKEGGIDs,
         data = fella.data,
@@ -550,6 +565,8 @@ tab_OPLSDAQual <- generateResultsTable(
         method = "diffusion",
         nlimit = 500)
 
+write.csv(tab_OPLSDAQual, file = "tab_OPLSDAQual.csv")
+
 analysis.OPLSDAQuant <- enrich(
         compounds = OPLSDAQuantResultKEGGIDs,
         data = fella.data,
@@ -576,11 +593,12 @@ plotGraph(
 dev.off()
 
 tab_OPLSDAQuant <- generateResultsTable(
-        object = analysis.ORA_OPLSDAQuant,
+        object = analysis.OPLSDAQuant,
         data = fella.data,
         method = "diffusion",
         nlimit = 500)
 
+write.csv(tab_OPLSDAQuant, file = "tab_OPLSDAQuant.csv")
 
 grep("*", dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)], fixed = T)
 
@@ -613,3 +631,4 @@ dev.off()
 tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]),]
 tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]),]
 tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]),]
+
