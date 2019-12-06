@@ -288,6 +288,8 @@ ORA_C1_2 <- doORA(diffMetObjkt = topDiffMets_branches1_2_undisc_KEGGIDs,
                   allMetsObjkt = allMets,
                   org = "pae")
 
+save(ORA_C1_2, file = "ORA_C1_2.RData")
+
 ORA_C1_2[match(gsub(" -.*", rownames(topDiffMets_branches1_2_Paths$`Representation of Pathways`), replacement = ""), ORA_C1_2$Pathways), ]
 
 ########################################################################################################################################################
@@ -350,6 +352,8 @@ ORA_C1.1_1.2 <- doORA(diffMetObjkt = topDiffMets_branches1.1_1.2_KEGGIDs,
                       allMetsObjkt = allMets,
                       org = "pae")
 
+save(ORA_C1.1_1.2, file = "ORA_C1.1_1.2.RData")
+
 ORA_C1.1_1.2[match(gsub(" -.*", rownames(topDiffMets_branches1.1_1.2_Paths$`Representation of Pathways`), replacement = ""), ORA_C1.1_1.2$Pathways), ]
 
 # Cluster 2
@@ -403,6 +407,8 @@ topDiffMets_branches2.1_2.2_Paths <- getRelatedPaths(keggidxs = topDiffMets_bran
 ORA_C2.1_2.2 <- doORA(diffMetObjkt = topDiffMets_branches2.1_2.2_KEGGIDs, 
                       allMetsObjkt = allMets,
                       org = "pae")
+
+save(ORA_C2.1_2.2, file = "ORA_C2.1_2.2.RData")
 
 ORA_C2.1_2.2[match(gsub(" -.*", rownames(topDiffMets_branches2.1_2.2_Paths$`Representation of Pathways`), replacement = ""), ORA_C2.1_2.2$Pathways), ]
 
@@ -479,3 +485,25 @@ heatmap.2(as.matrix(t(ccmn_norm_mets_good_old_diffMets_quantMeds)), Rowv = T, di
 
 dev.off()
 
+
+# Do ORA selecting random sample of diffMets, but same background.
+
+randomORA <- doORA(diffMetObjkt = sample(allMets, 5), allMetsObjkt = allMets, org = "pae")
+
+# Do an ORA with random background and a random sample of mets to see if maybe the pathways are biased towards aminoacid metbolism: doesn't happen
+backRand = as.character(sample(5:5555, 70))
+
+for(i in seq_along(backRand)){
+        if(nchar(backRand[i]) < 4){
+                backRand[i] <- paste(paste(rep("0", (4 - nchar(backRand[i]))), collapse = ""), 
+                                     backRand[i], 
+                                     collapse = "", 
+                                     sep = "")
+        }
+        backRand[i] <- paste("C0", backRand[i], collapse = "", sep = "")
+}
+paste(rep("0", 3), collapse = "")
+
+
+randomORABackAndSamp <- doORA(diffMetObjkt = sample(backRand, 5), allMetsObjkt = backRand, org = "pae")
+randomORABackAndSamp

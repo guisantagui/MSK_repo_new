@@ -196,3 +196,36 @@ pathways2.1_2.2_old[, 3] <- gsub(" -.*", pathways2.1_2.2_old[, 3], replacement =
 write.csv(pathways1_2_old, file = "pathways1_2_old.csv")
 write.csv(pathways1.1_1.2_old, file = "pathways1.1_1.2_old.csv")
 write.csv(pathways2.1_2.2_old, file = "pathways2.1_2.2_old.csv")
+
+# See overlaps between ORA and FELLA
+if(!require(Vennerable)) install.packages("Vennerable", repos="http://R-Forge.R-project.org")
+library(Vennerable)
+
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/oldDataGood/ORA_C1_2.RData")
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/oldDataGood/ORA_C1.1_1.2.RData")
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/oldDataGood/ORA_C2.1_2.2.RData")
+
+pathList1_2 <- list("FELLA" = pathways1_2_old$KEGG.name, "ORA" = gsub("\\ - .*", ORA_C1_2$Pathways, replacement = ""))
+pathList1.1_1.2 <- list("FELLA" = pathways1.1_1.2_old$KEGG.name, "ORA" = gsub("\\ - .*", ORA_C1.1_1.2$Pathways, replacement = ""))
+pathList2.1_2.2 <- list("FELLA" = pathways2.1_2.2_old$KEGG.name, "ORA" = gsub("\\ - .*", ORA_C2.1_2.2$Pathways, replacement = ""))
+
+vennORAFELLA1_2<- Venn(Sets = pathList1_2)
+tiff(filename = "vennORAFELLA1_2.tiff", height = 1400, width = 1800, res = 300)
+plot(vennORAFELLA1_2, doWeights = T, type = "circles")
+dev.off()
+
+Reduce(intersect, pathList1_2)
+
+vennORAFELLA1.1_1.2<- Venn(Sets = pathList1.1_1.2)
+tiff(filename = "vennORAFELLA1.1_1.2.tiff", height = 1400, width = 1800, res = 300)
+plot(vennORAFELLA1.1_1.2, doWeights = T, type = "circles")
+dev.off()
+
+Reduce(intersect, pathList1.1_1.2)
+
+vennORAFELLA2.1_2.2<- Venn(Sets = pathList2.1_2.2)
+tiff(filename = "vennORAFELLA2.1_2.2.tiff", height = 1400, width = 1800, res = 300)
+plot(vennORAFELLA2.1_2.2, doWeights = T, type = "circles")
+dev.off()
+
+Reduce(intersect, pathList2.1_2.2)

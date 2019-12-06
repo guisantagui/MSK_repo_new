@@ -100,7 +100,7 @@ cols <- topo.colors(length(strain_names) + 1)
 cols <- cols[-1]
 cols[1] <- '#000000'
 
-tiff("gene_tab.tiff", width = 5000, height = 25000, units = "px", pointsize = 50)
+tiff("gene_tab.tiff", width = 1000, height = 4000, units = "px", pointsize = 50)
 
 heatmap.2(t(gene_tab), Rowv = T, distfun = function(x) dist(x, method = "euclidean"), 
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "column", 
