@@ -2,6 +2,7 @@ setwd("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/swarmAnalysis")
 swarm <- read.csv(file = "sAreaTable.csv")
 #Load functions
 source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/diffMetAnal_functions.R")
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/swarmAnalysis")
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/dictionary/dictionary.RData")
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/normMetAnal/oldDataGood/ccmn_norm_mets_good_old.RData")
 swarm
@@ -27,41 +28,26 @@ sum(shapPVals > 0.05)
 sum(shapPVals <= 0.05)
 
 # We assume normal distribution
-getSwarmMeans <- function(swarmDat){
-        swarmMeans <- c()
-        for(i in seq_along(levels(swarmDat[, 1]))){
-                vec <- swarmDat[which(swarmDat[, 1] == levels(swarmDat[, 1])[i]), 2]
-                swarmMeans <- c(swarmMeans, mean(vec))
-        }
-        names(swarmMeans) <- levels(swarmDat[, 1])
-        return(swarmMeans)
-}
-
 swarmMeans <- getSwarmMeans(swarm)
+save(swarmMeans, file = "swarmMeans.RData")
+save(swarmMeansRearr, file = "swarmMeansRearr.RData")
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+# With metabolomic data 
+####################################################################################################################
+####################################################################################################################
+####################################################################################################################
 
 ####################################################################################################################
 ####################################################################################################################
 #   Logistic regression
 ####################################################################################################################
 ####################################################################################################################
-
-####################################################################################################################
-# With metabolomic data 
-####################################################################################################################
-
 if (!require(caret)) install.packages('caret')
 library(caret)
 
 # Binarize swarming according to histogram: if greater than -2 they are swarmers.
-
-binarizeSwarm <- function(x, threshold = -2){
-        swarmBin <- x
-        swarmBin[swarmMeans > threshold] <- "Swarmer"
-        swarmBin[swarmMeans < threshold] <- "nonSwarmer"
-        swarmBin <- as.factor(swarmBin)
-        return(swarmBin)
-}
-
 swarmBin <- binarizeSwarm(swarmMeans, threshold = -1.7)
 names(swarmBin) <- gsub(".*_", names(swarmBin), replacement = "")
 strainNames <- unique(gsub("\\_.*|(PA14).*", rownames(ccmn_norm_mets_good_old), rep = "\\1"))
@@ -191,8 +177,6 @@ confusionMatrix(data = bstClassesRFE, testing$swarmData) # --> Accuracy of 0.8 w
 # Do pathway enrichment 
 if(!require(FELLA)) BiocManager::install("FELLA")
 library(FELLA)
-if(!require(org.Mm.eg.db)) BiocManager::install("org.Mm.eg.db")
-library(org.Mm.eg.db)
 if(!require(KEGGREST)) install.packages("KEGGREST")
 library(KEGGREST)
 if(!require(igraph)) install.packages("igraph")
@@ -208,6 +192,7 @@ ORA_rfeResults <- doORA(diffMetObjkt = rfeResultKEGGIDs,
                         org = "pae")
 
 write.csv(ORA_rfeResults, file = "ORA_rfeResults.csv")
+save(ORA_rfeResults, file = "ora_rfeResults.RData")
 
 # With FELLA
 graph <- buildGraphFromKEGGREST(
@@ -224,7 +209,6 @@ buildDataFromGraph(
         niter = 100)
 
 
-alias2entrez <- as.list(org.Mm.eg.db::org.Mm.egSYMBOL2EG)
 entrez2ec <- KEGGREST::keggLink("enzyme", "pae")
 entrez2path <- KEGGREST::keggLink("pathway", "pae")
 fella.data <- loadKEGGdata(
@@ -271,6 +255,7 @@ tab_rfeSwarm <- generateResultsTable(
         nlimit = 500)
 
 write.csv(tab_rfeSwarm, file = "tab_rfeSwarm.csv")
+save(tab_rfeSwarm, file = "tab_rfeSwarm.RData")
 # Same pathways than the ones obtained in the ORA with differential metabolites
 
 # Lets make dendogram with swarm in label
@@ -322,30 +307,249 @@ ggsave(filename = "HCA_with_swarm.tiff", plot = last_plot(), device = "tiff",
 # Whith a threshold of -1.7 in log swarming area all the strains in cluster 2 are nonswarmers,
 # while the 66.66% of the swarmer strains come from blood. 
 
+
+####################################################################################################################
+####################################################################################################################
+#   Multivariate analysis
+####################################################################################################################
+####################################################################################################################
+
+if(!require(ropls)) BiocManager::install("ropls")
+library(ropls)
+
+swarmMeansRearr <- swarmMeans
+names(swarmMeansRearr) <- gsub(".*_", names(swarmMeans), replacement = "")
+swarmMeansRearr <- swarmMeansRearr[names(swarmMeansRearr) %in% strainNames]
+swarmMeansRearr <- swarmMeansRearr[match(strainNames, names(swarmMeansRearr))]
+swarmMeansRearr <- swarmMeansRearr[!is.na(swarmMeansRearr)]
+
+ccmn_norm_mets_good_old <- cbind.data.frame(ccmn_norm_mets_good_old, 
+                                            swarmMeansRearr[match(gsub("\\_.*|(PA14).*", 
+                                                                       rownames(ccmn_norm_mets_good_old), 
+                                                                       rep = "\\1"), 
+                                                                  names(swarmMeansRearr))])
+
+colnames(ccmn_norm_mets_good_old)[ncol(ccmn_norm_mets_good_old)] <- "swarmQuant"
+
+ccmnNormPCA <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)])
+swarmData <- ccmn_norm_mets_good_old$swarmData
+plot(ccmnNormPCA,
+     typeVc = "x-score",
+     parAsColFcVn = swarmData)
+
+ccmnNormPLSQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmQuant)
+ccmnNormPLSQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmData)
+
+tiff(filename = "ccmnNormOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+ccmnNormOPLSDAQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
+                            ccmn_norm_mets_good_old$swarmQuant, 
+                            predI = 1, 
+                            orthoI = NA#,
+                            #subset = as.vector(inTrain)
+)
+dev.off()
+
+tiff(filename = "ccmnNormOPLSDAQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
+ccmnNormOPLSDAQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
+                           ccmn_norm_mets_good_old$swarmData, 
+                           predI = 1, 
+                           orthoI = NA#,
+                           #subset = as.vector(inTrain),
+)
+dev.off()
+
+table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)], fitted(ccmnNormOPLSDAQual))
+
+table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)],
+      predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
+
+table(ccmn_norm_mets_good_old$swarmData[-as.vector(inTrain)],
+      predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[-as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
+# Accuracy of 0.95 with the testing dataset
+
+# Build a matrix of the loading values for each component
+OPLSDAQuantLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQuant)[, 1],
+                          getLoadingMN(ccmnNormOPLSDAQuant, orthoL = T))
+colnames(OPLSDAQuantLoads)[1] <- "p1"
+OPLSDAQualLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQual)[, 1],
+                         getLoadingMN(ccmnNormOPLSDAQual, orthoL = T))
+colnames(OPLSDAQualLoads)[1] <- "p1"
+
+# Obtain the 3variables with most extreme loading values (positive and negative) of each component
+extremValsOPLSDAQual <- getExtremVals(OPLSDAQualLoads, n = 3)
+extremValsOPLSDAQuant <- getExtremVals(OPLSDAQuantLoads, n = 3)
+
+OPLSDAQualResult <- dictionary$Consensus[match(extremValsOPLSDAQual$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
+OPLSDAQualResult <- OPLSDAQualResult[!is.na(OPLSDAQualResult)]
+names(OPLSDAQualResult) <- OPLSDAQualResult
+OPLSDAQualResult <- rmAmbig(OPLSDAQualResult)
+OPLSDAQualResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQualResult, dictionary$Consensus)]
+OPLSDAQualResultKEGGIDs <- OPLSDAQualResultKEGGIDs[!is.na(OPLSDAQualResultKEGGIDs)]
+
+OPLSDAQuantResult <- dictionary$Consensus[match(extremValsOPLSDAQuant$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
+OPLSDAQuantResult <- OPLSDAQuantResult[!is.na(OPLSDAQuantResult)]
+names(OPLSDAQuantResult) <- OPLSDAQuantResult
+OPLSDAQuantResult <- rmAmbig(OPLSDAQuantResult)
+OPLSDAQuantResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQuantResult, dictionary$Consensus)]
+OPLSDAQuantResultKEGGIDs <- OPLSDAQuantResultKEGGIDs[!is.na(OPLSDAQuantResultKEGGIDs)]
+
+ORA_OPLSDAQual <- doORA(OPLSDAQualResultKEGGIDs, allMets, org = "pae")
+ORA_OPLSDAQuant <- doORA(OPLSDAQuantResultKEGGIDs, allMets, org = "pae")
+
+write.csv(ORA_OPLSDAQual, file = "ORA_OPLSDAQual.csv")
+write.csv(ORA_OPLSDAQuant, file = "ORA_OPLSDAQuant.csv")
+save(ORA_OPLSDAQual, file = "ORA_OPLSDAQual.RData")
+save(ORA_OPLSDAQuant, file = "ORA_OPLSDAQuant.RData")
+
+analysis.OPLSDAQual <- enrich(
+        compounds = OPLSDAQualResultKEGGIDs,
+        data = fella.data,
+        method = "diffusion",
+        approx = "normality")
+
+analysis.OPLSDAQual %>%
+        getInput %>%
+        getName(data = fella.data)
+getExcluded(analysis.OPLSDAQual)
+
+g_OPLSDAQual <- generateResultsGraph(
+        object = analysis.OPLSDAQual,
+        method = "diffusion",
+        nlimit = 350,
+        data = fella.data)
+g_OPLSDAQual
+
+tiff("FELLA_OPLSDAQual.tiff", width = 4000, height = 4000, units = "px", pointsize = 50)
+plotGraph(
+        g_OPLSDAQual
+  #vertex.label.cex = vertex.label.cex)
+)
+dev.off()
+
+tab_OPLSDAQual <- generateResultsTable(
+        object = analysis.OPLSDAQual,
+        data = fella.data,
+        method = "diffusion",
+        nlimit = 500)
+
+write.csv(tab_OPLSDAQual, file = "tab_OPLSDAQual.csv")
+save(tab_OPLSDAQual, file = "tab_OPLSDAQual.RData")
+
+analysis.OPLSDAQuant <- enrich(
+        compounds = OPLSDAQuantResultKEGGIDs,
+        data = fella.data,
+        method = "diffusion",
+        approx = "normality")
+
+analysis.OPLSDAQuant %>%
+        getInput %>%
+        getName(data = fella.data)
+getExcluded(analysis.OPLSDAQuant)
+
+g_OPLSDAQuant <- generateResultsGraph(
+        object = analysis.OPLSDAQuant,
+        method = "diffusion",
+        nlimit = 350,
+        data = fella.data)
+g_OPLSDAQuant
+
+tiff("FELLA_OPLSDAQuant.tiff", width = 4000, height = 4000, units = "px", pointsize = 50)
+plotGraph(
+        g_OPLSDAQuant
+  #vertex.label.cex = vertex.label.cex)
+)
+dev.off()
+
+tab_OPLSDAQuant <- generateResultsTable(
+        object = analysis.OPLSDAQuant,
+        data = fella.data,
+        method = "diffusion",
+        nlimit = 500)
+
+save(tab_OPLSDAQuant, file = "tab_OPLSDAQuant.RData")
+
+write.csv(tab_OPLSDAQuant, file = "tab_OPLSDAQuant.csv")
+
+grep("*", dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)], fixed = T)
+
+dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)][-grep("*", dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)], fixed = T)]
+
+# See overlaps
+if(!require(Vennerable)) install.packages("Vennerable", repos="http://R-Forge.R-project.org")
+library(Vennerable)
+
+overlapPathsORA <- list("ORA RFE" = ORA_rfeResults[, 1], 
+                        "ORA OPLS-DA quantitative" = ORA_OPLSDAQuant[, 1], 
+                        "ORA OPLS-DA qualitative" = ORA_OPLSDAQuant[, 1])
+
+vennPathsORA <- Venn(Sets = overlapPathsORA)
+tiff(filename = "overlapPathsORA.tiff", height = 1400, width = 1800, res = 300)
+plot(vennPathsORA, doWeights = T, type = "circles")
+dev.off()
+
+overlapORA <- Reduce(intersect, overlapPathsORA)
+save(overlapORA, file = "overlapORA.RData")
+
+tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3]
+
+overlapPathsFELLA <- list("FELLA RFE" = tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3], 
+                          "FELLA OPLS-DA quantitative" = tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]), 3], 
+                          "FELLA OPLS-DA qualitative" = tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]), 3])
+
+vennPathsFELLA <- Venn(Sets = overlapPathsFELLA)
+tiff(filename = "overlapPathsFELLA.tiff", height = 1400, width = 1800, res = 300)
+plot(vennPathsFELLA, doWeights = T, type = "circles")
+dev.off()
+
+overlapFELLA <- Reduce(intersect, overlapPathsFELLA)
+save(overlapFELLA, file = "overlapFELLA")
+
+tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]),]
+tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]),]
+tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]),]
+
+
+pae00630Genes <- keggLink(source = c("map00630", "map00630"), target = "enzyme")
+pae00630Genes <- gsub("ec:", pae00630Genes, replacement = "")
+
+tab_rfeSwarm[tab_rfeSwarm$KEGG.id %in% pae00630Genes, ]
+
+# both ORA and FELLA seem to output same pathways when using random metabolites. Let's do some random iterations to 
+# see what pathways get enriched.
+
+sampleMetsRFE <- list()
+for(i in 1:1000){
+      sampleMetsRFE[[i]] <- sample(allMets, length(rfeResultKEGGIDs))  
+}
+
+sampleMetsOPLSDA <- list()
+for(i in 1:1000){
+        sampleMetsOPLSDA[[i]] <- sample(allMets, length(OPLSDAQuantResultKEGGIDs))  
+}
+
+# Modify doORA function to speed it up (we need to do 1000 random iterations)
+
+paePaths <- keggList("pathway", "pae")
+totPathsInMets <- unique(unlist(sapply(allMets, keggLink, target = "pathway")))
+totPathsInMets <- totPathsInMets[gsub("map", replacement = "pae", totPathsInMets) %in% names(paePaths)]
+compsPerPathAllPaths <- sapply(totPathsInMets, keggLink, target = "compound")
+
+randORARFE <- lapply(sampleMetsRFE, doORAMod)
+randORAOPLSDA <- lapply(sampleMetsOPLSDA, doORAMod)
+
+####################################################################################################################
+####################################################################################################################
 ####################################################################################################################
 # With genomic data 
 ####################################################################################################################
+####################################################################################################################
+####################################################################################################################
+library(gplots)
+
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/gene_enz_tab_filt.RData")
 
-
-jaccGroup <- function(genePresAbsObjkt, threshold = 0.05){
-        if(!require(proxy)) install.packages('proxy')
-        library(proxy)
-        geneTab <- sapply(genePresAbsObjkt, as.integer)
-        rownames(geneTab) <- rownames(genePresAbsObjkt)
-        colnames(geneTab) <- make.names(colnames(geneTab), unique = T)
-        jaccDist <- proxy::dist(geneTab, by_rows = F, method = "Jaccard", diag = T)
-        jaccHCA <- hclust(jaccDist, method = "complete")
-        jaccGroups <- cutree(jaccHCA, h = threshold)
-        groups <- c()
-        for(i in 1:max(jaccGroups)){
-                groups <- c(groups, names(sort(jaccGroups)[which(sort(jaccGroups) == i)])[1])
-        }
-        geneTabGrouped <- geneTab[, groups]
-        return(list("GroupedMat" = geneTabGrouped, "Groups" = jaccGroups))
-}
-
-geneEnzTabFiltGrouped <- jaccGroup(gene_enz_tab_filt)$GroupedMat
+# Group strains with a Jaccard similarity of 0.95 or above
+geneEnzTabFiltGrouped <- jaccGroup(gene_enz_tab_filt, threshold = 0.05)$GroupedMat
 
 geneGroups <- jaccGroup(gene_enz_tab_filt)$Groups
 
@@ -433,22 +637,26 @@ confusionMatrix(data = bstClassesRFEEnz, testingEnz$swarmData)
 # The enzymatic genes obtained are symilar to the ones obtained when classifying the strains in the 
 # two major clusters.
 
-# Ungroup first 20 more important genes (according to RFE) grouped in jaccard
+# Ungroup first 10 more important genes (according to RFE) grouped in jaccard
 predGenes <- c()
-for(i in 1:20){
+for(i in 1:10){
         predGenes <- c(predGenes, names(which(geneGroups == 
                                                 geneGroups[which(names(geneGroups) == 
                                                                    predictors(resultsEnz)[i])])))
 }
 
 rownames(gene_enz_tab_filt)[grep("W70322", rownames(gene_enz_tab_filt))] <- "W70332"
+
+# Do a submatrix of GeneEnzTab with the unpacked 10 most important group according to RFE
 geneEnzTabSign <- gene_enz_tab_filt[match(names(sort(swarmMeansRearr)), rownames(gene_enz_tab_filt)), 
                                     which(make.names(colnames(gene_enz_tab_filt)) %in% predGenes)]
 
 geneEnzTabSign <- geneEnzTabSign[rownames(geneEnzTabSign) != "NA", ]
 
+# Do heatmap of the submatrix
+
 cols <- topo.colors(nrow(gene_enz_tab_filt) + 2)
-cols <- cols[-c(1, 2, grep("W70332", rownames(gene_enz_tab_filt)))]
+cols <- cols[-c(1, 2)]#, grep("W70332", rownames(gene_enz_tab_filt)))]
 
 
 tiff("geneEnzTabSign.tiff", width = 10000, height = 5000, units = "px", pointsize = 100)
@@ -456,7 +664,7 @@ heatmap.2(t(as.matrix(geneEnzTabSign)), Rowv = T, Colv = F, distfun = function(x
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
           col = c("blue", "red"), ColSideColors = cols[match(rownames(geneEnzTabSign), rownames(gene_enz_tab_filt)[-grep("W70332", 
                                                                                                                  rownames(gene_enz_tab_filt))])], notecol = NULL, trace = "none", xlab = "Strains", 
-          ylab = "Genes", main = "Presence/absence of genes related to swarming", margins = c(8, 60), 
+          ylab = "Genes", main = "Presence/absence of genes related to swarming (RFE)", margins = c(8, 60), 
           keysize = 1,
           sepwidth = c(0.1, 0.05),
           cexRow = 1.75,
@@ -479,211 +687,67 @@ heatmap.2(t(as.matrix(geneEnzTabSign)), Rowv = T, Colv = F, distfun = function(x
           })
 dev.off()
 
-####################################################################################################################
-####################################################################################################################
-#   Multivariate analysis
-####################################################################################################################
-####################################################################################################################
+geneEnzTabFiltGrouped <- cbind.data.frame(geneEnzTabFiltGrouped, swarmMeansRearr[-1])
+colnames(geneEnzTabFiltGrouped)[ncol(geneEnzTabFiltGrouped)] <- "swarmQuant"
 
-if(!require(ropls)) BiocManager::install("ropls")
-library(ropls)
-
-swarmMeansRearr <- swarmMeans
-names(swarmMeansRearr) <- gsub(".*_", names(swarmMeans), replacement = "")
-swarmMeansRearr <- swarmMeansRearr[names(swarmMeansRearr) %in% strainNames]
-swarmMeansRearr <- swarmMeansRearr[match(strainNames, names(swarmMeansRearr))]
-swarmMeansRearr <- swarmMeansRearr[!is.na(swarmMeansRearr)]
-
-ccmn_norm_mets_good_old <- cbind.data.frame(ccmn_norm_mets_good_old, 
-                                            swarmMeansRearr[match(gsub("\\_.*|(PA14).*", 
-                                                                       rownames(ccmn_norm_mets_good_old), 
-                                                                       rep = "\\1"), 
-                                                                  names(swarmMeansRearr))])
-
-colnames(ccmn_norm_mets_good_old)[ncol(ccmn_norm_mets_good_old)] <- "swarmQuant"
-
-ccmnNormPCA <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)])
-swarmData <- ccmn_norm_mets_good_old$swarmData
-plot(ccmnNormPCA,
-     typeVc = "x-score",
-     parAsColFcVn = swarmData)
-
-ccmnNormPLSQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmQuant)
-ccmnNormPLSQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmData)
-
-tiff(filename = "ccmnNormOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
-ccmnNormOPLSDAQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
-                            ccmn_norm_mets_good_old$swarmQuant, 
-                            predI = 1, 
-                            orthoI = NA#,
+tiff(filename = "geneEnzTabOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+geneEnzTabOPLSDAQuant <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)],
+                              geneEnzTabFiltGrouped$swarmQuant, 
+                              predI = 1, 
+                              orthoI = NA#,
                             #subset = as.vector(inTrain)
-                            )
+)
 dev.off()
 
-tiff(filename = "ccmnNormOPLSDAQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
-ccmnNormOPLSDAQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
-                           ccmn_norm_mets_good_old$swarmData, 
-                           predI = 1, 
-                           orthoI = NA#,
-                           #subset = as.vector(inTrain),
-                           )
-dev.off()
+geneEnzTabOPLSDAQuantLoads <- cbind(getLoadingMN(geneEnzTabOPLSDAQuant)[, 1],
+                                    getLoadingMN(geneEnzTabOPLSDAQuant, orthoL = T))
+colnames(geneEnzTabOPLSDAQuantLoads)[1] <- "p1"
 
-table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)], fitted(ccmnNormOPLSDAQual))
+geneEnzTabExtremLoads <- getExtremVals(geneEnzTabOPLSDAQuantLoads, n = 5)
 
-table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)],
-      predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
-
-table(ccmn_norm_mets_good_old$swarmData[-as.vector(inTrain)],
-      predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[-as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
-# Accuracy of 0.95 with the testing dataset
-
-OPLSDAQuantLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQuant)[, 1],
-                          getLoadingMN(ccmnNormOPLSDAQuant, orthoL = T))
-colnames(OPLSDAQuantLoads)[1] <- "p1"
-OPLSDAQualLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQual)[, 1],
-                         getLoadingMN(ccmnNormOPLSDAQual, orthoL = T))
-colnames(OPLSDAQualLoads)[1] <- "p1"
-
-getExtremVals <- function(loadsMat, n = 5){
-        extrVals <- list()
-        for(i in 1:ncol(loadsMat)){
-                extrVals[[i]] <- c(head(sort(loadsMat[, i]), n),
-                                   tail(sort(loadsMat[, i]), n)) 
-        }
-        names(extrVals) <- colnames(loadsMat)
-        uniqueExtrVars <- unique(unlist(lapply(extrVals, names)))
-        return(list("extremeVals" = extrVals, 
-                    "uniqueExtremeVars" = uniqueExtrVars))
+predGenesOPLSDA <- c()
+for(i in 1:10){
+  predGenesOPLSDA <- c(predGenesOPLSDA, names(which(geneGroups == 
+                                                      geneGroups[which(names(geneGroups) == 
+                                                                         geneEnzTabExtremLoads$uniqueExtremeVars[i])])))
 }
+predGenesOPLSDA
 
-extremValsOPLSDAQual <- getExtremVals(OPLSDAQualLoads, n = 3)
-extremValsOPLSDAQuant <- getExtremVals(OPLSDAQuantLoads, n = 3)
+# Do a submatrix of geneEnzTab of the 10 groups with most extreme loading values of p1 from OPLS-DA
 
-OPLSDAQualResult <- dictionary$Consensus[match(extremValsOPLSDAQual$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
-OPLSDAQualResult <- OPLSDAQualResult[!is.na(OPLSDAQualResult)]
-names(OPLSDAQualResult) <- OPLSDAQualResult
-OPLSDAQualResult <- rmAmbig(OPLSDAQualResult)
-OPLSDAQualResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQualResult, dictionary$Consensus)]
-OPLSDAQualResultKEGGIDs <- OPLSDAQualResultKEGGIDs[!is.na(OPLSDAQualResultKEGGIDs)]
+geneEnzTabSignOPLSDA <- gene_enz_tab_filt[match(names(sort(swarmMeansRearr)), rownames(gene_enz_tab_filt)), 
+                                          which(make.names(colnames(gene_enz_tab_filt)) %in% predGenesOPLSDA)]
 
-OPLSDAQuantResult <- dictionary$Consensus[match(extremValsOPLSDAQuant$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
-OPLSDAQuantResult <- OPLSDAQuantResult[!is.na(OPLSDAQuantResult)]
-names(OPLSDAQuantResult) <- OPLSDAQuantResult
-OPLSDAQuantResult <- rmAmbig(OPLSDAQuantResult)
-OPLSDAQuantResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQuantResult, dictionary$Consensus)]
-OPLSDAQuantResultKEGGIDs <- OPLSDAQuantResultKEGGIDs[!is.na(OPLSDAQuantResultKEGGIDs)]
+geneEnzTabSignOPLSDA <- geneEnzTabSignOPLSDA[rownames(geneEnzTabSignOPLSDA) != "NA", ]
 
-ORA_OPLSDAQual <- doORA(OPLSDAQualResultKEGGIDs, allMets, org = "pae")
-ORA_OPLSDAQuant <- doORA(OPLSDAQuantResultKEGGIDs, allMets, org = "pae")
+# Plot it
 
-write.csv(ORA_OPLSDAQual, file = "ORA_OPLSDAQual.csv")
-write.csv(ORA_OPLSDAQuant, file = "ORA_OPLSDAQuant.csv")
-
-analysis.OPLSDAQual <- enrich(
-        compounds = OPLSDAQualResultKEGGIDs,
-        data = fella.data,
-        method = "diffusion",
-        approx = "normality")
-
-analysis.OPLSDAQual %>%
-        getInput %>%
-        getName(data = fella.data)
-getExcluded(analysis.OPLSDAQual)
-
-g_OPLSDAQual <- generateResultsGraph(
-        object = analysis.OPLSDAQual,
-        method = "diffusion",
-        nlimit = 350,
-        data = fella.data)
-g_OPLSDAQual
-
-tiff("FELLA_OPLSDAQual.tiff", width = 4000, height = 4000, units = "px", pointsize = 50)
-plotGraph(
-        g_OPLSDAQual
-        #vertex.label.cex = vertex.label.cex)
-)
+tiff("geneEnzTabSignOPLSDA.tiff", width = 10000, height = 5000, units = "px", pointsize = 100)
+heatmap.2(t(as.matrix(geneEnzTabSignOPLSDA)), Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
+          col = c("blue", "red"), ColSideColors = cols[match(rownames(geneEnzTabSignOPLSDA), rownames(gene_enz_tab_filt)[-grep("W70332", 
+                                                                                                                               rownames(gene_enz_tab_filt))])], notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Genes", main = "Presence/absence of genes related to swarming (OPLS-DA)", margins = c(8, 60), 
+          keysize = 1,
+          sepwidth = c(0.1, 0.05),
+          cexRow = 1.75,
+          cexCol = 1.75,
+          
+          #sepcolor = "black",
+          #colsep=1:ncol(t(gene_tab)),
+          #rowsep=1:nrow(t(gene_tab)),
+          key.xtickfun=function() {
+            cex <- par("cex")*par("cex.axis")
+            side <- 1
+            line <- 0
+            col <- par("col.axis")
+            font <- par("font.axis")
+            mtext("low", side=side, at=0, adj=0,
+                  line=line, cex=cex, col=col, font=font)
+            mtext("high", side=side, at=1, adj=1,
+                  line=line, cex=cex, col=col, font=font)
+            return(list(labels=FALSE, tick=FALSE))
+          })
 dev.off()
 
-tab_OPLSDAQual <- generateResultsTable(
-        object = analysis.OPLSDAQual,
-        data = fella.data,
-        method = "diffusion",
-        nlimit = 500)
 
-write.csv(tab_OPLSDAQual, file = "tab_OPLSDAQual.csv")
-
-analysis.OPLSDAQuant <- enrich(
-        compounds = OPLSDAQuantResultKEGGIDs,
-        data = fella.data,
-        method = "diffusion",
-        approx = "normality")
-
-analysis.OPLSDAQuant %>%
-        getInput %>%
-        getName(data = fella.data)
-getExcluded(analysis.OPLSDAQuant)
-
-g_OPLSDAQuant <- generateResultsGraph(
-        object = analysis.OPLSDAQuant,
-        method = "diffusion",
-        nlimit = 350,
-        data = fella.data)
-g_OPLSDAQuant
-
-tiff("FELLA_OPLSDAQuant.tiff", width = 4000, height = 4000, units = "px", pointsize = 50)
-plotGraph(
-        g_OPLSDAQuant
-        #vertex.label.cex = vertex.label.cex)
-)
-dev.off()
-
-tab_OPLSDAQuant <- generateResultsTable(
-        object = analysis.OPLSDAQuant,
-        data = fella.data,
-        method = "diffusion",
-        nlimit = 500)
-
-write.csv(tab_OPLSDAQuant, file = "tab_OPLSDAQuant.csv")
-
-grep("*", dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)], fixed = T)
-
-dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)][-grep("*", dictionary$`KEGG IDs`[!is.na(dictionary$`KEGG IDs`)], fixed = T)]
-
-# See overlaps
-if(!require(Vennerable)) install.packages("Vennerable", repos="http://R-Forge.R-project.org")
-library(Vennerable)
-
-overlapPathsORA <- list("ORA RFE" = ORA_rfeResults[, 1], 
-                        "ORA OPLS-DA quantitative" = ORA_OPLSDAQuant[, 1], 
-                        "ORA OPLS-DA qualitative" = ORA_OPLSDAQuant[, 1])
-
-vennPathsORA <- Venn(Sets = overlapPathsORA)
-tiff(filename = "overlapPathsORA.tiff", height = 1400, width = 1800, res = 300)
-plot(vennPathsORA, doWeights = T, type = "circles")
-dev.off()
-
-Reduce(intersect, overlapPathsORA)
-
-tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3]
-
-overlapPathsFELLA <- list("FELLA RFE" = tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3], 
-                          "FELLA OPLS-DA quantitative" = tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]), 3], 
-                          "FELLA OPLS-DA qualitative" = tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]), 3])
-
-vennPathsFELLA <- Venn(Sets = overlapPathsFELLA)
-tiff(filename = "overlapPathsFELLA.tiff", height = 1400, width = 1800, res = 300)
-plot(vennPathsFELLA, doWeights = T, type = "circles")
-dev.off()
-
-Reduce(intersect, overlapPathsFELLA)
-
-tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]),]
-tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]),]
-tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]),]
-
-
-pae00630Genes <- keggLink(source = c("map00630", "map00630"), target = "enzyme")
-pae00630Genes <- gsub("ec:", pae00630Genes, replacement = "")
-
-tab_rfeSwarm[tab_rfeSwarm$KEGG.id %in% pae00630Genes, ]

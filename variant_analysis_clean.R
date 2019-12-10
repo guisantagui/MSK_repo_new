@@ -50,16 +50,12 @@ metDists1_2 <- dist(ccmn_norm_mets_good_old, "euclidean")
 HCA_mets1_2 <- hclust(metDists1_2, method = "ward.D")
 HCA_mets1_2_cut <- cutree(HCA_mets1_2, k = 2)
 
-metDists1.1_1.2 <- dist(ccmn_norm_mets_good_old[which(HCA_mets1_2_cut == 1), ], "euclidean")
-HCA_mets1.1_1.2 <- hclust(metDists1.1_1.2, method = "ward.D")
-HCA_mets1.1_1.2_cut <- cutree(HCA_mets1.1_1.2, k = 2)
-
-metDists2.1_2.2 <- dist(ccmn_norm_mets_good_old[which(HCA_mets1_2_cut == 2), ], "euclidean")
+metDists2.1_2.2 <- dist(ccmn_quant_norm[which(HCA_mets_1_2 == 2), ], "euclidean")
 HCA_mets2.1_2.2 <- hclust(metDists2.1_2.2, method = "ward.D")
 HCA_mets2.1_2.2_cut <- cutree(HCA_mets2.1_2.2, k = 2)
 
-strainsC1_2 <- HCA_mets1_2_cut
-names(strainsC1_2) <- gsub("_.*", names(HCA_mets1_2_cut), replacement = "")
+strainsC1_2 <- HCA_mets_1_2
+names(strainsC1_2) <- gsub("_.*", names(HCA_mets_1_2), replacement = "")
 strainsC1_2 <- strainsC1_2[unique(names(strainsC1_2))]
 strainsC1_2 <- strainsC1_2[-c(1, 2)] #--> This line is for removing PA14A & PA14B
 
@@ -91,7 +87,7 @@ goodOldMeds <- getStrainMedian(ccmn_norm_mets_good_old)
 newMeds <- getStrainMedian(ccmn_norm_mets_newData)
 hybMeds <- getStrainMedian(ccmn_norm_mets_hybrid)
 
-metDists_median <- dist(goodOldMeds, "euclidean")
+metDists_median <- dist(ccmn_quant_norm_median, "euclidean")
 HCA_mets_median <- hclust(metDists_median, method = "ward.D")
 HCA_mets_1_2_median <- cutree(HCA_mets_median, k = 2)
 strainsC1_2_median <- HCA_mets_1_2_median[-c(1, 2)]
@@ -443,6 +439,7 @@ csvOutSignDiff <- function(kruskSign, diffMets = NULL, metNames, spitOut = F){
         signDiffAA <- list()
         signDiffAA_enz <- list()
         for(i in seq_along(kruskSignFiltDNA)){
+                print(i)
                 signDiffDNA[[i]] <- t(as.matrix(names(kruskSignFiltDNA[[i]])))
                 signDiffDNA_enz[[i]] <- t(as.matrix(names(kruskSignFiltDNA[[i]])[grep("EC", names(kruskSignFiltDNA[[i]]))]))
                 signDiffAA[[i]] <- t(as.matrix(names(kruskSignFiltAA[[i]])))
@@ -500,9 +497,7 @@ signDiffAA_enz[[i]] <- t(as.matrix(names(kruskSignFiltAA[[i]])[grep("EC", names(
 #                                                                                                                     #################################
 # Build matrix with the variant each strain has for each gene, and paste it to gene presence/absence matrix,          #################################
 # for then obtain Hamming Distance between strains and do a HCA with it, to see if with this we can reproduce         #################################
-# the HCA we obtained from metabolite abundance data. By other side build a matrix mixing the genes that were         #################################
-# found to be related to the belongance of the strains to cluster 1 or 2 according to decision trees, logistic        #################################
-# regression and Mann Whitney tests.                                                                                  #################################
+# the HCA we obtained from metabolite abundance data.                                                                 #################################
 #                                                                                                                     #################################
 #######################################################################################################################################################
 if(!require(clustertend)) install.packages("clustertend")
@@ -534,30 +529,30 @@ load("../decTreesLogReg/mixedSign_old.RData")
 mixedSign_old <- t(mixedSign_old)
 mixedSign_old <- mixedSign_old[order(rownames(mixedSign_old)),]
 
-load("../genePresAbs/gene_tab_filt.RData")
-load("../genePresAbs/gene_enz_tab_filt.RData")
+load("../Diff_metabolites_analysis/gene_tab_filt.RData")
+load("../Diff_metabolites_analysis/gene_enz_tab_filt.RData")
 
-varMat_geneTab_old <- cbind(as.matrix(gene_tab_filt), varMat_old)
+varMat_geneTab <- cbind(as.matrix(gene_tab_filt), varMat)
 
 varMat_mixedSign_old <- cbind(mixedSign_old, varMat_old)
 
 # Change the name of "M6075" by "M55212", as we're assuming they are the same.
-rownames(varMat_geneTab_old)[which(rownames(varMat_geneTab_old) == "M6075")] <- "M55212"
-save(varMat_geneTab_old, file = "varMat_geneTab_old.RData")
+rownames(varMat_geneTab)[which(rownames(varMat_geneTab) == "M6075")] <- "M55212"
+save(varMat_geneTab, file = "varMat_geneTab.RData")
 
 rownames(varMat_mixedSign_old)[which(rownames(varMat_mixedSign_old) == "M6075")] <- "M55212"
 save(varMat_mixedSign_old, file = "varMat_mixedSign_old.RData")
 
-load("varMat_geneTab_old.RData")
-write.csv(varMat_geneTab_old, file = "varMat_geneTab_old.csv")
+load("varMat_geneTab.RData")
+write.csv(varMat_geneTab, file = "varMat_geneTab.csv")
 
-hopkins(varMat_geneTab_old, n = 24, header = T)
-get_clust_tendency(varMat_geneTab_old, n = 24)
+hopkins(varMat_geneTab, n = 24, header = T)
+get_clust_tendency(varMat_geneTab, n = 24)
 
 
-hamDist_varMatGeneTab <- hamming.distance(varMat_geneTab_old)
-save(hamDist_varMatGeneTab, file = "hamDist_varMatGeneTab.RData")
-HCA_hamDist_varMatGeneTab <- hclust(as.dist(hamDist_varMatGeneTab), method = "complete")
+hamDist <- hamming.distance(varMat_geneTab)
+save(hamDist, file = "hamDist.RData")
+HCA_hamDist <- hclust(as.dist(hamDist), method = "complete")
 
 hamDist_mixOld <- hamming.distance(varMat_mixedSign_old)
 save(hamDist_mixOld, file = "hamDist_mixOld.RData")
@@ -566,8 +561,10 @@ HCA_hamDist_mixOld <- hclust(as.dist(hamDist_mixOld), method = "complete")
 # Compare with the dendrogram obtained when clustering the metabolomic data
 if(!require(dendextend)) install.packages("dendextend")
 library(dendextend)
-require(ggplot2)
+ccmn_quant_norm_median_woPA14 <- ccmn_quant_norm_median[-c(1, 2), ]
 
+metDists_median_woPA14 <- dist(ccmn_quant_norm_median_woPA14, "euclidean")
+HCA_mets_median_woPA14 <- hclust(metDists_median_woPA14, method = "ward.D")
 
 metDists_goodOldMeds <- dist(goodOldMeds, "euclidean")
 HCA_goodOldMeds <- hclust(metDists_goodOldMeds, method = "ward.D")
@@ -576,8 +573,8 @@ goodOldMeds_noPA14 <- goodOldMeds[-c(1, 2), ]
 metDists_goodOldMeds_noPA14 <- dist(goodOldMeds_noPA14, "euclidean")
 HCA_goodOldMeds_noPA14 <- hclust(metDists_goodOldMeds_noPA14, method = "ward.D")
 
-plot(HCA_hamDist_varMatGeneTab)
-plot(HCA_goodOldMeds)
+plot(HCA_hamDist)
+plot(HCA_mets_median_woPA14)
 plot(HCA_hamDist_mixOld)
 plot(HCA_goodOldMeds_noPA14)
 
@@ -612,6 +609,50 @@ tissues <- c("wild type",
 
 names(tissues) <- rownames(goodOldMeds)
 tissues <- as.factor(tissues)
+
+
+library(dendextend)
+
+small_iris <- iris[c(1, 51, 101, 2, 52, 102), ]
+dend <- as.dendrogram(hclust(dist(small_iris[,-5])))
+# Like: 
+# dend <- small_iris[,-5] %>% dist %>% hclust %>% as.dendrogram
+
+# By default, the dend has no colors to the labels
+labels_colors(dend)
+par(mfrow = c(1,2))
+plot(dend, main = "Original dend")
+
+# let's add some color:
+colors_to_use <- as.numeric(small_iris[,5])
+colors_to_use
+# But sort them based on their order in dend:
+colors_to_use <- colors_to_use[order.dendrogram(dend)]
+colors_to_use
+# Now we can use them
+labels_colors(dend) <- colors_to_use
+# Now each state has a color
+labels_colors(dend) 
+plot(dend, main = "A color for every Species")
+
+
+
+
+
+df <- goodOldMeds
+
+
+if(!require(magittr)) BiocManager::install('magittr')
+require(ggplot)
+require(dendextend)
+
+dend <- df %>% dist(method = "euclidean") %>%
+        hclust(method = "ward.D") %>% as.dendrogram %>%
+        set("branches_k_color", k = 2) %>% set("branches_lwd", 0.7) %>%
+        set("labels_cex", 0.8) %>% set("leaves_pch", 19) %>% 
+        set("leaves_cex", 0.5) 
+
+unique(tissues)
 tissuesColors <- c("firebrick",
                    "blue3",
                    "burly wood", 
@@ -620,32 +661,16 @@ tissuesColors <- c("firebrick",
                    "darkgreen",
                    "darkgoldenrod1",
                    "black")
+colorsToUse <- as.numeric(tissues)
+colorsToUse <- tissuesColors[colorsToUse]
+colorsToUse <- colorsToUse[order.dendrogram(dend)]
+labels_colors(dend) <- colorsToUse
 
-# Old Data
-
-df_goodOldMeds <- data.frame(Strain = rownames(goodOldMeds),
-                  Tissue = as.character(tissues))
-
-
-goodOldMeds_hcdata <- dendro_data(HCA_goodOldMeds, type="rectangle")
-
-goodOldMeds_hcdata$labels <- merge(x = goodOldMeds_hcdata$labels,
-                                   y = df_goodOldMeds,  by.x = "label", by.y = "Strain")
-
-
-ggplot() +
-        geom_segment(data=segment(goodOldMeds_hcdata), aes(x=x, y=y, xend=xend, yend=yend)) +
-        geom_text(data = label(goodOldMeds_hcdata), aes(x=x, y=y, label=label, colour = Tissue, hjust=0), size=5) +
-        geom_point(data = label(goodOldMeds_hcdata), aes(x=x, y=y), size=0.1, shape = 21) +
-        coord_flip() +
-        scale_y_reverse(expand=c(0.2, 0)) +
-        scale_colour_brewer(palette = "Dark2") + 
-        scale_color_manual(values = tissuesColors)
-
-
-ggsave(filename = "HCA_Medians_oldData.tiff", plot = last_plot(), device = "tiff", 
+ggd1 <- as.ggdend(dend)
+ggplot(ggd1)
+ggsave(filename = "tst.pdf", plot = last_plot(), device = "pdf", 
        path = NULL,
-       scale = 1, width = 18, height = 40, units = "cm",
+       scale = 1, width = 40, height = 35, units = "cm",
        dpi = 300, limitsize = F)
 
 
@@ -667,47 +692,29 @@ ggsave(filename = "HCA_CCMN_goodOld_noPA14.pdf", plot = last_plot(), device = "p
        path = NULL,
        scale = 1, width = 40, height = 20, units = "cm",
        dpi = 300, limitsize = F)
-cophMat <- cophenetic(HCA_goodOldMeds)
-cor(metDists_goodOldMeds, cophMat)
+cophMat <- cophenetic(HCA_CCMN)
+cor(distMatCCMN, cophMat)
 
-dend_hamDist_varMatGeneTab <- as.dendrogram(HCA_hamDist_varMatGeneTab)
+dend_hamDist <- as.dendrogram(HCA_hamDist)
+dend_mets_median_woPA14 <- as.dendrogram(HCA_mets_median_woPA14)
 dend_hamDist_mixOld <- as.dendrogram(HCA_hamDist_mixOld)
 dend_goodOldMeds_noPA14 <- as.dendrogram(HCA_goodOldMeds_noPA14)
-dend_goodOldMeds <- as.dendrogram(HCA_goodOldMeds)
 
 
+dend_compList <- dendlist(dend_hamDist, dend_mets_median_woPA14) %>% untangle(method = "step1side") %>%
+        tanglegram()  
 
-dend_compList_varMatGeneTab <- dendlist(dend_hamDist_varMatGeneTab, dend_goodOldMeds) %>% untangle(method = "step1side") %>%
-        tanglegram(main_left = "Hamming Dendrogram of Variants and presence of differential genes",
-                   main_right = "Metabolite abundance dendrogram", sort = T)  
-dev.off()
-
-dendlist(dend_hamDist_varMatGeneTab, dend_goodOldMeds_noPA14) %>% untangle(method = "step1side") %>%
+dendlist(dend_hamDist, dend_mets_median_woPA14) %>% untangle(method = "step1side") %>%
         entanglement() #--> 0.17 --> Close to cero, so it means that are related.
 
-
-tiff(filename = "tanlegram_hammingDiffGenes&Vars_ccmnMedClust.tiff", height = 3000, width = 6000, units = "px")
 dend_compList_old <- dendlist(dend_hamDist_mixOld, dend_goodOldMeds_noPA14) %>% untangle(method = "step1side") %>%
-        tanglegram(main_left = "Hamming Dendrogram of Variants and presence of differential genes",
-                   main_right = "Metabolite abundance dendrogram", 
-                   cex_main = 8,
-                   lab.cex = 6, 
-                   dLeaf_left = -0.4,
-                   dLeaf_right = 0.04, 
-                   margin_top = 10,
-                   margin_inner = 22,
-                   margin_outer = 22,
-                   edge.lwd = 5,
-                   lwd = 7)  
-dev.off()
-
-
+        tanglegram()  
 
 dendlist(dend_hamDist_mixOld, dend_goodOldMeds_noPA14) %>% untangle(method = "step1side") %>%
         entanglement() 
 
-cor.dendlist(dend_compList_varMatGeneTab, method = "cophenetic")
-cor.dendlist(dend_compList_varMatGeneTab, method = "baker")
+cor.dendlist(dend_compList, method = "cophenetic")
+cor.dendlist(dend_compList, method = "baker")
 
 cor.dendlist(dend_compList_old, method = "cophenetic")
 cor.dendlist(dend_compList_old, method = "baker")
