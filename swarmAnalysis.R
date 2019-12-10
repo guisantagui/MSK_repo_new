@@ -342,10 +342,12 @@ jaccGroup <- function(genePresAbsObjkt, threshold = 0.05){
                 groups <- c(groups, names(sort(jaccGroups)[which(sort(jaccGroups) == i)])[1])
         }
         geneTabGrouped <- geneTab[, groups]
-        return(geneTabGrouped)
+        return(list("GroupedMat" = geneTabGrouped, "Groups" = jaccGroups))
 }
 
-geneEnzTabFiltGrouped <- jaccGroup(gene_enz_tab_filt)
+geneEnzTabFiltGrouped <- jaccGroup(gene_enz_tab_filt)$GroupedMat
+
+geneGroups <- jaccGroup(gene_enz_tab_filt)$Groups
 
 rownames(geneEnzTabFiltGrouped)[rownames(geneEnzTabFiltGrouped) == "W70322"] <- "W70332"
 
@@ -431,7 +433,51 @@ confusionMatrix(data = bstClassesRFEEnz, testingEnz$swarmData)
 # The enzymatic genes obtained are symilar to the ones obtained when classifying the strains in the 
 # two major clusters.
 
+# Ungroup first 20 more important genes (according to RFE) grouped in jaccard
+predGenes <- c()
+for(i in 1:20){
+        predGenes <- c(predGenes, names(which(geneGroups == 
+                                                geneGroups[which(names(geneGroups) == 
+                                                                   predictors(resultsEnz)[i])])))
+}
 
+rownames(gene_enz_tab_filt)[grep("W70322", rownames(gene_enz_tab_filt))] <- "W70332"
+geneEnzTabSign <- gene_enz_tab_filt[match(names(sort(swarmMeansRearr)), rownames(gene_enz_tab_filt)), 
+                                    which(make.names(colnames(gene_enz_tab_filt)) %in% predGenes)]
+
+geneEnzTabSign <- geneEnzTabSign[rownames(geneEnzTabSign) != "NA", ]
+
+cols <- topo.colors(nrow(gene_enz_tab_filt) + 2)
+cols <- cols[-c(1, 2, grep("W70332", rownames(gene_enz_tab_filt)))]
+
+
+tiff("geneEnzTabSign.tiff", width = 10000, height = 5000, units = "px", pointsize = 100)
+heatmap.2(t(as.matrix(geneEnzTabSign)), Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
+          col = c("blue", "red"), ColSideColors = cols[match(rownames(geneEnzTabSign), rownames(gene_enz_tab_filt)[-grep("W70332", 
+                                                                                                                 rownames(gene_enz_tab_filt))])], notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Genes", main = "Presence/absence of genes related to swarming", margins = c(8, 60), 
+          keysize = 1,
+          sepwidth = c(0.1, 0.05),
+          cexRow = 1.75,
+          cexCol = 1.75,
+          
+          #sepcolor = "black",
+          #colsep=1:ncol(t(gene_tab)),
+          #rowsep=1:nrow(t(gene_tab)),
+          key.xtickfun=function() {
+            cex <- par("cex")*par("cex.axis")
+            side <- 1
+            line <- 0
+            col <- par("col.axis")
+            font <- par("font.axis")
+            mtext("low", side=side, at=0, adj=0,
+                  line=line, cex=cex, col=col, font=font)
+            mtext("high", side=side, at=1, adj=1,
+                  line=line, cex=cex, col=col, font=font)
+            return(list(labels=FALSE, tick=FALSE))
+          })
+dev.off()
 
 ####################################################################################################################
 ####################################################################################################################
@@ -617,6 +663,8 @@ tiff(filename = "overlapPathsORA.tiff", height = 1400, width = 1800, res = 300)
 plot(vennPathsORA, doWeights = T, type = "circles")
 dev.off()
 
+Reduce(intersect, overlapPathsORA)
+
 tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3]
 
 overlapPathsFELLA <- list("FELLA RFE" = tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]), 3], 
@@ -628,7 +676,14 @@ tiff(filename = "overlapPathsFELLA.tiff", height = 1400, width = 1800, res = 300
 plot(vennPathsFELLA, doWeights = T, type = "circles")
 dev.off()
 
+Reduce(intersect, overlapPathsFELLA)
+
 tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]),]
 tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]),]
 tab_OPLSDAQual[grep("pathway", tab_OPLSDAQual[, 2]),]
 
+
+pae00630Genes <- keggLink(source = c("map00630", "map00630"), target = "enzyme")
+pae00630Genes <- gsub("ec:", pae00630Genes, replacement = "")
+
+tab_rfeSwarm[tab_rfeSwarm$KEGG.id %in% pae00630Genes, ]
