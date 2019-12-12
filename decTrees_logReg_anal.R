@@ -471,7 +471,7 @@ overlapFeats <- list("RFE" = RFE[1:20],
                      "Fisher test" = fish_old)
 
 vennOld_impFeats <- Venn(Sets = overlapFeats)
-tiff(filename = "overlapImpFeats.tiff", height = 500, width = 700)
+tiff(filename = "overlapImpFeats.tiff", height = 1400, width = 1800, res = 300)
 plot(vennOld_impFeats, doWeights = F, type = "ellipses")
 dev.off()
 

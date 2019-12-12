@@ -16,11 +16,13 @@ getSwarmMeans <- function(swarmDat){
 
 # Binarize swarming data according to a given threshold
 binarizeSwarm <- function(x, threshold = -2){
-        swarmBin <- x
-        swarmBin[swarmMeans > threshold] <- "Swarmer"
-        swarmBin[swarmMeans < threshold] <- "nonSwarmer"
-        swarmBin <- as.factor(swarmBin)
-        return(swarmBin)
+        swarmMeans <- x
+        binVec <- rep(NA, length(swarmMeans))
+        names(binVec) <- names(swarmMeans)
+        binVec[swarmMeans > threshold] <- "Swarmer"
+        binVec[swarmMeans < threshold] <- "nonSwarmer"
+        binVec <- as.factor(binVec)
+        return(binVec)
 }
 
 # Modified version of doORA function to save time in multiple iterations (for check bias)
@@ -88,4 +90,23 @@ jaccGroup <- function(genePresAbsObjkt, threshold = 0.05){
         }
         geneTabGrouped <- geneTab[, groups]
         return(list("GroupedMat" = geneTabGrouped, "Groups" = jaccGroups))
+}
+
+# From the list of result matrixes of multiple iteration of random ORAs or FELLAs, obtains null distribution of
+# p-values for each pathway.
+getPathNullDistrs <- function(randEnrichList){
+        allPaths <- as.character(unique(unlist(lapply(randEnrichList, function(x) x$Pathways))))
+        pathNullDistrs <- list()
+        for(i in seq_along(allPaths)){
+                nullVec <- c()
+                for(j in seq_along(randEnrichList)){
+                        if(allPaths[i] %in% randEnrichList[[j]]$Pathways){
+                                nullVec <- c(nullVec, 
+                                             randEnrichList[[j]][randEnrichList[[j]]$Pathways == allPaths[i], ]$p.values)
+                        }
+                }
+                pathNullDistrs[[i]] <- nullVec
+        }
+        names(pathNullDistrs) <- allPaths
+        return(pathNullDistrs)
 }

@@ -41,7 +41,7 @@ colnames(ccmn_norm_mets_hybrid)[!is.na(metKEGGIDs_hybrid)] <- metKEGGIDs_hybrid[
 
 
 # Obtain dist matrix and divide in 2 major clusters, and each major cluster in its 2 subclusters.
-source("../genePresAbs/genePresAbs_functions.R")
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/MSK_repo_new/genePresAbs_functions.R")
 clustsOld <- getMetClusts(ccmn_norm_mets_good_old)
 clustsNew <- getMetClusts(ccmn_norm_mets_newData)
 clustsHyb <- getMetClusts(ccmn_norm_mets_hybrid)

@@ -3,6 +3,9 @@
 # using DNA sequence.
 
 identifyDiffGenes <- function(ParsedSubGraphsNamed_objt, strainGroups, p_adjust = T, method = NA, alpha = 0.05){
+        namesGroups <- names(strainGroups)
+        strainGroups <- as.factor(as.integer(strainGroups))
+        names(strainGroups) <- namesGroups
         medDistSameDNACl1 <- c()
         medDistSameDNACl2 <- c()
         medDistSameDNA <- c()
@@ -106,12 +109,12 @@ identifyDiffGenes <- function(ParsedSubGraphsNamed_objt, strainGroups, p_adjust 
                 mannWhitResDNA <- p.adjust(mannWhitResDNA, method = method)
                 mannWhitResAA <- p.adjust(mannWhitResAA, method = method) 
         }
-        signGenesClusts1_2DNA <- cbind(namesGenes[which(mannWhitResDNA <= alpha)], mannWhitResDNA[which(mannWhitResDNA <= alpha)])
-        signGenesClusts1_2DNA <- cbind(signGenesClusts1_2DNA, distDifferDNA[which(mannWhitResDNA <= alpha)])
+        signGenesClusts1_2DNA <- cbind.data.frame(namesGenes[which(mannWhitResDNA <= alpha)], mannWhitResDNA[which(mannWhitResDNA <= alpha)])
+        signGenesClusts1_2DNA <- cbind.data.frame(signGenesClusts1_2DNA, distDifferDNA[which(mannWhitResDNA <= alpha)])
         colnames(signGenesClusts1_2DNA) <- c("Annotation", "p-value", "medians_difference")
         signGenesClusts1_2DNA <- signGenesClusts1_2DNA[order(signGenesClusts1_2DNA[, 3], decreasing = T), ]
-        signGenesClusts1_2AA <- cbind(namesGenes[which(mannWhitResAA <= alpha)], mannWhitResAA[which(mannWhitResAA <= alpha)])
-        signGenesClusts1_2AA <- cbind(signGenesClusts1_2AA, distDifferAA[which(mannWhitResAA <= alpha)])
+        signGenesClusts1_2AA <- cbind.data.frame(namesGenes[which(mannWhitResAA <= alpha)], mannWhitResAA[which(mannWhitResAA <= alpha)])
+        signGenesClusts1_2AA <- cbind.data.frame(signGenesClusts1_2AA, distDifferAA[which(mannWhitResAA <= alpha)])
         colnames(signGenesClusts1_2AA) <- c("Annotation", "p-value", "medians_difference")
         signGenesClusts1_2AA <- signGenesClusts1_2AA[order(signGenesClusts1_2AA[, 3], decreasing = T), ]
         results <- list("MannWhitney_meds" = mannWhitMeds, 

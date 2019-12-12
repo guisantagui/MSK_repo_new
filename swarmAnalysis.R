@@ -1,8 +1,8 @@
 setwd("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/swarmAnalysis")
 swarm <- read.csv(file = "sAreaTable.csv")
 #Load functions
-source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/diffMetAnal_functions.R")
-source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/swarmAnalysis")
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/MSK_repo_new/diffMetAnal_functions.R")
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/MSK_repo_new/swarmFunctions.R")
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/dictionary/dictionary.RData")
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/normMetAnal/oldDataGood/ccmn_norm_mets_good_old.RData")
 swarm
@@ -358,7 +358,7 @@ ccmnNormOPLSDAQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good
 )
 dev.off()
 
-table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)], fitted(ccmnNormOPLSDAQual))
+table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)], fitted(ccmnNormOPLSDAQual)[as.vector(inTrain)])
 
 table(ccmn_norm_mets_good_old$swarmData[as.vector(inTrain)],
       predict(ccmnNormOPLSDAQual, ccmn_norm_mets_good_old[as.vector(inTrain), 1:(ncol(ccmn_norm_mets_good_old) - 2)]))
@@ -502,7 +502,7 @@ plot(vennPathsFELLA, doWeights = T, type = "circles")
 dev.off()
 
 overlapFELLA <- Reduce(intersect, overlapPathsFELLA)
-save(overlapFELLA, file = "overlapFELLA")
+save(overlapFELLA, file = "overlapFELLA.RData")
 
 tab_rfeSwarm[grep("pathway", tab_rfeSwarm[, 2]),]
 tab_OPLSDAQuant[grep("pathway", tab_OPLSDAQuant[, 2]),]
