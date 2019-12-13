@@ -157,6 +157,7 @@ rfeResult <- dictionary$Consensus[match(predictors(results), make.names(dictiona
 rfeResult <- rfeResult[!is.na(rfeResult)]
 names(rfeResult) <- rfeResult
 rfeResult <- rmAmbig(rfeResult)
+save(rfeResultKEGGIDs, file = "rfeResultKEGGIDs.RData")
 formRFE <- as.formula(paste("swarmData", paste(make.names(rfeResult), collapse = " + "), sep = " ~ "))
 rfeResultKEGGIDs <- dictionary$`KEGG IDs`[match(rfeResult, dictionary$Consensus)]
 
@@ -385,6 +386,7 @@ names(OPLSDAQualResult) <- OPLSDAQualResult
 OPLSDAQualResult <- rmAmbig(OPLSDAQualResult)
 OPLSDAQualResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQualResult, dictionary$Consensus)]
 OPLSDAQualResultKEGGIDs <- OPLSDAQualResultKEGGIDs[!is.na(OPLSDAQualResultKEGGIDs)]
+save(OPLSDAQualResultKEGGIDs, file = "OPLSDAQualResultKEGGIDs.RData")
 
 OPLSDAQuantResult <- dictionary$Consensus[match(extremValsOPLSDAQuant$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
 OPLSDAQuantResult <- OPLSDAQuantResult[!is.na(OPLSDAQuantResult)]
@@ -392,6 +394,7 @@ names(OPLSDAQuantResult) <- OPLSDAQuantResult
 OPLSDAQuantResult <- rmAmbig(OPLSDAQuantResult)
 OPLSDAQuantResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQuantResult, dictionary$Consensus)]
 OPLSDAQuantResultKEGGIDs <- OPLSDAQuantResultKEGGIDs[!is.na(OPLSDAQuantResultKEGGIDs)]
+save(OPLSDAQuantResultKEGGIDs, file = "OPLSDAQuantResultKEGGIDs.RData")
 
 ORA_OPLSDAQual <- doORA(OPLSDAQualResultKEGGIDs, allMets, org = "pae")
 ORA_OPLSDAQuant <- doORA(OPLSDAQuantResultKEGGIDs, allMets, org = "pae")

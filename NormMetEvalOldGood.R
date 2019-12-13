@@ -891,6 +891,7 @@ NormalizeReport[9,7] = neibSumNormalizeMets$ddist
 
 forReport <- NormalizeReport[c(1, 2, 3, 4, 5, 7, 8),]
 
+tiff("normmethod_dist_normalizeMets_oldData.tiff", res = 300, height = 1500, width = 1500)
 ggplot(data = forReport, mapping = aes(x = sd, y = dd)) +
         geom_point() +
         geom_label(aes(label=NormalizeMethod[c(1, 2, 3, 4, 5, 7, 8)]),nudge_y=0.025) +
@@ -898,8 +899,10 @@ ggplot(data = forReport, mapping = aes(x = sd, y = dd)) +
                 y= "Mean distance between strains",
                 x= "Mean distance between replicates"
         )
+dev.off()
 
 ggsave("normmethod_dist_normalizeMets_oldData.pdf")
+ggsave("normmethod_dist_normalizeMets_oldData.tiff")
 
 silhvarNormalizeMets <- data.frame(method=rep("pre",length(neibPreNormNormalizeMets$silh)),
                                    silh=neibPreNormNormalizeMets$silh)
@@ -922,7 +925,7 @@ silhvarNormalizeMets <- rbind(silhvarNormalizeMets,
                               data.frame(method=rep("mean",length(neibMeanNormalizeMets$silh)),
                                          silh=neibMeanNormalizeMets$silh))
 
-
+tiff("normmethod_silh_normalizeMets_oldData.tiff", res = 300, height = 1500, width = 1500)
 ggplot(data = silhvarNormalizeMets, mapping = aes(x = reorder(method, silh, FUN=median), y = silh)) +
         geom_boxplot() +
         #geom_line(data=normreport,mapping=aes(x=method,y=silh,group=1)) +
@@ -932,7 +935,7 @@ ggplot(data = silhvarNormalizeMets, mapping = aes(x = reorder(method, silh, FUN=
                 y= "Silhouete",
                 x= "Method"
         )
-
+dev.off()
 ggsave("normmethod_silh_normalizeMets_oldData.pdf") 
 
 #Histograms of pvalues to assess effectivity of normalization

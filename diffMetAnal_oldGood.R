@@ -14,7 +14,7 @@ load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/normMetAnal/oldDataGood/c
 ccmn_norm_mets <- ccmn_norm_mets_good_old
 
 #Load functions
-source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/diffMetAnal/diffMetAnal_functions.R")
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/MSK_repo_new/diffMetAnal_functions.R")
 
 ########################################################################################################################################################
 #
@@ -454,20 +454,87 @@ ccmn_norm_mets_good_old_diffMets <- ccmn_norm_mets[, dictionary$Consensus[match(
 
 ccmn_norm_mets_good_old_diffMets_quant <- quantNorm(ccmn_norm_mets_good_old_diffMets)
 
-ccmn_norm_mets_good_old_diffMets_quantMeds <- getStrainMedian(ccmn_norm_mets_good_old_diffMets_quant)
+ccmn_norm_mets_good_old_diffMets_quantMeds <- getStrainMedian(ccmn_norm_mets_good_old_diffMets_quant)[-grep(x = strain_names, pattern = "M6075"), ]
+ccmn_norm_mets_good_old_meds <- getStrainMedian(ccmn_norm_mets_good_old)[-grep(x = strain_names, pattern = "M6075"), ]
 
 
+
+heatMapMeds <- heatmap.2(as.matrix(t(ccmn_norm_mets_good_old_meds)), Rowv = T, distfun = function(x) dist(x, method = "euclidean"), 
+                         density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
+                         col = redgreen(75), breaks = 76, ColSideColors = unique(Cols)[-grep(x = strain_names, pattern = "M6075")], notecol = NULL, trace = "none", xlab = "Strains", 
+                         ylab = "Metabolites", main = "CCMN normalized, medians", margins = c(7, 16), 
+                         cex.main = 20,
+                         keysize = 0.7,
+                         cexRow = 1,
+                         cexCol = 1.2,
+                         cellnote = round(as.matrix(t(ccmn_norm_mets_good_old_meds)), 2),
+                         notecex = 0.7,
+                         key.xtickfun=function() {
+                                 cex <- par("cex")*par("cex.axis")
+                                 side <- 1
+                                 line <- 0
+                                 col <- par("col.axis")
+                                 font <- par("font.axis")
+                                 mtext("low", side=side, at=0, adj=0,
+                                       line=line, cex=cex, col=col, font=font)
+                                 mtext("high", side=side, at=1, adj=1,
+                                       line=line, cex=cex, col=col, font=font)
+                                 return(list(labels=FALSE, tick=FALSE))
+                         })
+
+
+#Load binarized swarming to add color labels to heatmap
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/swarmAnalysis/swarmMeansGoodBin.RData")
+colCols <- rep("firebrick", nrow(ccmn_norm_mets_good_old_meds))
+names(colCols) <- rownames(ccmn_norm_mets_good_old_meds)
+colCols[names(colCols) %in% names(swarmMeansGoodBin[swarmMeansGoodBin == "Swarmer"])] <- "blue3"
+colCols[1:2] <- "blue3"
+
+tiff("heatmapCCMN_diffMets_Meds_oldGood.tiff", width = 3000, height = 3000, units = "px", pointsize = 50)
+heatmap.2(as.matrix(t(ccmn_norm_mets_good_old_meds)), Rowv = T, distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
+          col = redgreen(75), breaks = 76, ColSideColors = unique(Cols)[-grep(x = strain_names, pattern = "M6075")], notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Metabolites", main = "CCMN normalized, medians", margins = c(7, 16), 
+          cex.main = 20,
+          keysize = 0.7,
+          cexRow = 0.5,
+          cexCol = 1.2,
+          colCol = colCols,
+          cellnote = round(as.matrix(t(ccmn_norm_mets_good_old_meds)), 2),
+          notecex = 0.7,
+          key.xtickfun=function() {
+                  cex <- par("cex")*par("cex.axis")
+                  side <- 1
+                  line <- 0
+                  col <- par("col.axis")
+                  font <- par("font.axis")
+                  mtext("low", side=side, at=0, adj=0,
+                        line=line, cex=cex, col=col, font=font)
+                  mtext("high", side=side, at=1, adj=1,
+                        line=line, cex=cex, col=col, font=font)
+                  return(list(labels=FALSE, tick=FALSE))
+          })
+
+dev.off()
+
+# Get order of rows of un quantile-normalized dendrogram
+orderMedsHeatMap <- order.dendrogram(heatMapMeds$colDendrogram)
+
+ccmn_norm_mets_good_old_diffMets_quantMeds <- ccmn_norm_mets_good_old_diffMets_quantMeds[orderMedsHeatMap, ]
 
 tiff("heatmapCCMN_diffMets_quant_oldGood.tiff", width = 3000, height = 3000, units = "px", pointsize = 50)
-
-heatmap.2(as.matrix(t(ccmn_norm_mets_good_old_diffMets_quantMeds)), Rowv = T, distfun = function(x) dist(x, method = "euclidean"), 
-          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
-          col = redgreen(75), breaks = 76, ColSideColors = unique(Cols), notecol = NULL, trace = "none", xlab = "Strains", 
+heatmap.2(as.matrix(t(ccmn_norm_mets_good_old_diffMets_quantMeds)), Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
+          col = redgreen(75), breaks = 76, ColSideColors = unique(Cols)[-grep(x = strain_names, pattern = "M6075")][match(rownames(ccmn_norm_mets_good_old_diffMets_quantMeds),
+                                                                                                                          rownames(ccmn_norm_mets_good_old_meds))], 
+          notecol = NULL, trace = "none", xlab = "Strains", 
           ylab = "Metabolites", main = "CCMN normalized, quantile-normalized, only differential metabolites", margins = c(7, 16), 
           cex.main = 20,
           keysize = 0.7,
           cexRow = 1,
           cexCol = 1.2,
+          colCol = colCols[match(rownames(ccmn_norm_mets_good_old_diffMets_quantMeds),
+                                 rownames(ccmn_norm_mets_good_old_meds))],
           cellnote = round(as.matrix(t(ccmn_norm_mets_good_old_diffMets_quantMeds)), 2),
           notecex = 0.7,
           key.xtickfun=function() {
