@@ -484,8 +484,10 @@ outPut1_2_hyb <- csvOutSignDiff(kruskSign = kruskSign1_2_hyb,
                                 metNames = colnames(ccmn_norm_mets_hybrid), 
                                 spitOut = T)
 
-
-
+outPut1_2_oldfiltOPLSDAEnzDNA <- outPut1_2_old$DNA_enz[, colnames(outPut1_2_old$DNA_enz) %in% OPLSDAQuantResultKEGGIDs]
+outPut1_2_oldfiltOPLSDAEnzAA <- outPut1_2_old$AA_enz[, colnames(outPut1_2_old$AA_enz) %in% OPLSDAQuantResultKEGGIDs]
+write.csv(outPut1_2_oldfiltOPLSDAEnzDNA, file = "outPut1_2_oldfiltOPLSDAEnzDNA.csv")
+write.csv(outPut1_2_oldfiltOPLSDAEnzAA, file = "outPut1_2_oldfiltOPLSDAEnzAA.csv")
 
 t(as.matrix(names(kruskSign1_2_new$DNA[[29]])))
 t(as.matrix(names(kruskSign1_2_new$DNA[29])[grep("EC", names(kruskSign1_2_new$DNA[[29]]))]))
@@ -642,7 +644,7 @@ plot(dend, main = "A color for every Species")
 df <- goodOldMeds
 
 
-if(!require(magittr)) BiocManager::install('magittr')
+#if(!require(magittr)) BiocManager::install('magittr')
 require(ggplot)
 require(dendextend)
 

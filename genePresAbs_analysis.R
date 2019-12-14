@@ -251,14 +251,14 @@ metKEGGIDs_old <- dictionary$`KEGG IDs`[match(colnames(ccmn_norm_mets_good_old),
 metKEGGIDs_new <- dictionary$`KEGG IDs`[match(colnames(ccmn_norm_mets_newData), dictionary$`New Data Names`)]
 metKEGGIDs_hybrid <- dictionary$`KEGG IDs`[match(colnames(ccmn_norm_mets_hybrid), dictionary$Consensus)]
 
-colnames(ccmn_norm_mets_good_old)[!is.na(metKEGGIDs_old)] <- metKEGGIDs_old[!is.na(metKEGGIDs_old)]
-colnames(ccmn_norm_mets_newData)[!is.na(metKEGGIDs_new)] <- metKEGGIDs_new[!is.na(metKEGGIDs_new)]
-colnames(ccmn_norm_mets_hybrid)[!is.na(metKEGGIDs_hybrid)] <- metKEGGIDs_hybrid[!is.na(metKEGGIDs_hybrid)]
+#colnames(ccmn_norm_mets_good_old)[!is.na(metKEGGIDs_old)] <- metKEGGIDs_old[!is.na(metKEGGIDs_old)]
+#colnames(ccmn_norm_mets_newData)[!is.na(metKEGGIDs_new)] <- metKEGGIDs_new[!is.na(metKEGGIDs_new)]
+#colnames(ccmn_norm_mets_hybrid)[!is.na(metKEGGIDs_hybrid)] <- metKEGGIDs_hybrid[!is.na(metKEGGIDs_hybrid)]
 
 ####################################################################################################################################
 ###################################                      GOOD OLD DATA ANALYSIS                  ###################################
 ####################################################################################################################################
-source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs/gene_tab/genePresAbs_functions.R")
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/MSK_repo_new/genePresAbs_functions.R")
 
 ####################
 #
@@ -266,7 +266,19 @@ source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs/gene_tab/genePresAbs_function
 #
 ####################################################################################################################################
 
+# Remove M6075: There's no genetic data of it
+
+#ccmn_norm_mets_good_old <- ccmn_norm_mets_good_old[-grep("M6075", rownames(ccmn_norm_mets_good_old)), ]
+#gene_tab <- gene_tab[-grep("M6075", rownames(gene_tab)), ]
+#gene_tab_filt <- gene_tab_filt[-grep("M6075", rownames(gene_tab_filt)), ]
+#gene_enz_tab <- gene_enz_tab[-grep("M6075", rownames(gene_enz_tab)), ]
+#gene_enz_tab_filt <- gene_enz_tab_filt[-grep("M6075", rownames(gene_enz_tab_filt)), ]
+
 metClusts_oldGood <- getMetClusts(ccmn_norm_mets_good_old)
+metClusts_oldGood4G <- metClusts_oldGood
+
+# Only 2 major clusters:
+metClusts_oldGood <- as.factor(gsub("\\..*", "", metClusts_oldGood))
 save(metClusts_oldGood, file = "metClusts_oldGood.RData")
 
 # All genes
@@ -287,6 +299,11 @@ contTab_oldGood_filtEnz <- getContTab(gene_enz_tab_filt, metClusts_oldGood[2:len
 #
 ####################################################################################################################################
 
+# Load predictors FELLA OPLS-DA results obtained with swarming/metabolome supervised analysis
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/swarmAnalysis/tab_OPLSDAQuant.RData")
+
+
+
 fish_oldGood_allGen <- doFisher(contTab_oldGood_allGenes, metClusts_oldGood)                                # 180 sign genes
 fish_oldGood_filt <- doFisher(contTab_oldGood_filt, metClusts_oldGood[2:length(metClusts_oldGood)])         # 139 sign genes
 fish_oldGood_enz <- doFisher(contTab_oldGood_enz, metClusts_oldGood)                                        # 12 sign genes
@@ -295,6 +312,11 @@ save(fish_oldGood_allGen, file = "fish_oldGood_allGen.RData")
 save(fish_oldGood_filt, file = "fish_oldGood_filt.RData")
 save(fish_oldGood_enz, file = "fish_oldGood_enz.RData")
 save(fish_oldGood_filtEnz, file = "fish_oldGood_allGen.RData")
+
+fish_oldGood_filtEnzKEGGIDs <- sub("\\).*", "", sub(".*\\(", "", fish_oldGood_filtEnz$sign.genes[, 1]))
+fish_oldGood_filtEnzKEGGIDs <- gsub("EC ", replacement = "ec:", fish_oldGood_filtEnzKEGGIDs)
+fish_oldGood_filtEnzKEGGIDsPaths <- sapply(fish_oldGood_filtEnzKEGGIDs, keggLink, target = "pathway")
+gsub("path:ec|path:map", replacement = "pae",  fish_oldGood_filtEnzKEGGIDsPaths[[2]]) %in% tab_OPLSDAQuant$KEGG.id # --> those genes don't participate in any of the affected pathways
 
 ####################
 #
@@ -308,6 +330,17 @@ save(fish_oldGood_filtEnz, file = "fish_oldGood_allGen.RData")
 ### p-value if the number of strains having the gene is greater than one. Pick genes with            ################################
 ### alpha < 0.05.                                                                                    ################################ 
 #####################################################################################################################################
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/MSK_repo_new/diffMetAnal_functions.R")
+
+# Remove ambiguous metabolites from ccmn normalized data 
+
+ccmn_norm_mets_good_old <- ccmn_norm_mets_good_old[, !is.na(dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)])]
+colnames(ccmn_norm_mets_good_old) <- dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)]
+ccmn_norm_mets_good_oldAmbigRem <- colnames(ccmn_norm_mets_good_old)
+names(ccmn_norm_mets_good_oldAmbigRem) <- ccmn_norm_mets_good_oldAmbigRem
+ccmn_norm_mets_good_oldAmbigRem <- rmAmbig(ccmn_norm_mets_good_oldAmbigRem)
+ccmn_norm_mets_good_old <- ccmn_norm_mets_good_old[, colnames(ccmn_norm_mets_good_old) %in% ccmn_norm_mets_good_oldAmbigRem]
+colnames(ccmn_norm_mets_good_old) <- dictionary$`KEGG IDs`[match(colnames(ccmn_norm_mets_good_old), dictionary$Consensus)]
 
 mannWhitPerGene_oldGood_allGenes <- getMannWhitPerGene(gene_tab, ccmn_norm_mets_good_old, p_adjust = T, method = "BY")
 save(mannWhitPerGene_oldGood_allGenes, file = "mannWhitPerGene_oldGood_allGenes.RData")
@@ -453,8 +486,9 @@ unique(as.vector(mannWhitPerGeneFilt_oldGood_filtEnz$as_mat)[!is.na(as.vector(ma
 ####################################################################################################################################
 ### Build a list with genes whose presence/absence individually was found to be correlated with     ################################
 ### differences in abundance of each one of the metabolites of the 3 sets of differential           ################################
-### metabolites.                                                                                    ################################
+### metabolites. Also with the set of predictors for swarming according to OPLS-DA quant            ################################
 ####################################################################################################################################
+
 
 diffGenesPerDiffMet_oldGood_allGenes <- getDiffGenePerDiffMet(mannWhitPerGeneFiltObjkt = mannWhitPerGeneFilt_oldGood_allGenes,
                                                               diffMetObjkt = diffMets_oldGood)
@@ -465,6 +499,8 @@ diffGenesPerDiffMet_oldGood_enz <- getDiffGenePerDiffMet(mannWhitPerGeneFiltObjk
 diffGenesPerDiffMet_oldGood_filtEnz <- getDiffGenePerDiffMet(mannWhitPerGeneFiltObjkt = mannWhitPerGeneFilt_oldGood_filtEnz,
                                                              diffMetObjkt = diffMets_oldGood)
 
+
+
 ####################################################################################################################################
 ### Obtain, for each one of the metabolites, a matrix of presence/absence of the genes reported     ################################
 ### to affect that metabolite, including the strains that belong to booth of the clusters           ################################
@@ -474,17 +510,32 @@ diffGenesPerDiffMet_oldGood_filtEnz <- getDiffGenePerDiffMet(mannWhitPerGeneFilt
 
 geneMatMets_oldGood_allGenes <- getGeneMatsPerMet(DGenesPerDMetsObjkt = diffGenesPerDiffMet_oldGood_allGenes,
                                                   genePresAbsObjkt = gene_tab,
-                                                  metClustObjkt = metClusts_oldGood)
+                                                  metClustObjkt = metClusts_oldGood4G)
 geneMatMets_oldGood_filt <- getGeneMatsPerMet(DGenesPerDMetsObjkt = diffGenesPerDiffMet_oldGood_filt,
                                               genePresAbsObjkt = gene_tab_filt,
-                                              metClustObjkt = metClusts_oldGood[2:length(metClusts_oldGood)])
+                                              metClustObjkt = metClusts_oldGood4G[2:length(metClusts_oldGood4G)])
 geneMatMets_oldGood_enz <- getGeneMatsPerMet(DGenesPerDMetsObjkt = diffGenesPerDiffMet_oldGood_enz,
                                              genePresAbsObjkt = gene_enz_tab,
-                                             metClustObjkt = metClusts_oldGood)
+                                             metClustObjkt = metClusts_oldGood4G)
 geneMatMets_oldGood_filtEnz <- getGeneMatsPerMet(DGenesPerDMetsObjkt = diffGenesPerDiffMet_oldGood_filtEnz,
                                                  genePresAbsObjkt = gene_enz_tab_filt,
-                                                 metClustObjkt = metClusts_oldGood[2:length(metClusts_oldGood)])
+                                                 metClustObjkt = metClusts_oldGood4G[2:length(metClusts_oldGood4G)])
 
+# Load OPLS-DA quant predictors for swarming: we're gonna filter the matrixes to keep only the ones of the mets that 
+# predict swarming
+
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/swarmAnalysis/OPLSDAQuantResultKEGGIDs.RData")
+
+# See overlap diffmets and OPLS-DA
+overlapOPLSDADiffMets <- list("diff mets C1 & C2" = diffMets_oldGood[, 1],
+                              "Swarming Predictors (OPLS-DA)" = OPLSDAQuantResultKEGGIDs)
+
+library(Vennerable)
+
+venndiffMetsOPLSDA <- Venn(overlapOPLSDADiffMets)
+tiff(filename = "venndiffMetsOPLSDA.tiff", height = 1400, width = 1800, res = 300)
+plot(venndiffMetsOPLSDA, doWeights = T, type = "circles")
+dev.off()
 ####################################################################################################################################
 ### Apply Mann-Whitney test for the genes associated to the differential metabolites for each       ################################
 ### pair of clusters, with alpha = 0.05, by one side comparing vectors of individual genes,         ################################
@@ -502,21 +553,25 @@ diffGenesPerMet_oldGood_filt <- filtMannWhitTabs(allDiffGenes_oldGood_filt, alph
 diffGenesPerMet_oldGood_enz <- filtMannWhitTabs(allDiffGenes_oldGood_enz, alpha = 0.05)
 diffGenesPerMet_oldGood_filtEnz <- filtMannWhitTabs(allDiffGenes_oldGood_filtEnz, alpha = 0.05)
 
+diffGenesPerMet_oldGood_filtEnz$Total$`1&2`[names(diffGenesPerMet_oldGood_filtEnz$Total$`1&2`) %in% OPLSDAQuantResultKEGGIDs]
+
 # Build heatmap with presence/absence of the genes that affect diffmets between 2 major groups, with strains ordered according 
 # to metabolic clusters.
+
+
 C1_2Genes_old_filtEnz <- unique(unlist(diffGenesPerMet_oldGood_filtEnz$Total$`1&2`))[unique(unlist(diffGenesPerMet_oldGood_filtEnz$Total$`1&2`)) != "Any relationship between the gene and the metabolite"]
 presAbsC1_2Genes_old_filtEnz <- gene_enz_tab_filt[, C1_2Genes_old_filtEnz]
-clustOrdC1_2_old <- names(sort(metClusts_oldGood[2:length(metClusts_oldGood)]))
+clustOrdC1_2_old <- names(sort(metClusts_oldGood4G[2:length(metClusts_oldGood4G)]))
 presAbsC1_2Genes_old_filtEnz <- t(presAbsC1_2Genes_old_filtEnz[clustOrdC1_2_old, ])
 save(presAbsC1_2Genes_old_filtEnz, file = "presAbsC1_2Genes_old_filtEnz.RData")
 save(C1_2Genes_old_filtEnz, file = "C1_2Genes_old_filtEnz.RData")
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/presAbsC1_2Genes_old_filtEnz.RData")
 
-tiff("minedDiffGenes_old_filtEnz.tiff", width = 7000, height = 5000, units = "px", pointsize = 100)
+tiff("minedDiffGenes_old_filtEnz.tiff", width = 8000, height = 2500, units = "px", pointsize = 100)
 heatmap.2(presAbsC1_2Genes_old_filtEnz, Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
           col = c("blue", "red"), ColSideColors = cols[match(clustOrdC1_2_old, rownames(gene_tab))], notecol = NULL, trace = "none", xlab = "Strains", 
-          ylab = "Genes", main = "Presence/absence of diff genes", margins = c(6, 50), 
+          ylab = "Genes", main = "Presence/absence of diff genes", margins = c(6, 65), 
           keysize = 1,
           sepwidth = c(0.1, 0.05),
           #sepcolor = "black",

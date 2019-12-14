@@ -67,12 +67,6 @@ rownames(ccmn_norm_mets_good_old)[grep("W70322", rownames(ccmn_norm_mets_good_ol
 
 ccmn_norm_mets_good_old <- ccmn_norm_mets_good_old[-grep(notInSwarmData, rownames(ccmn_norm_mets_good_old)), ]
 
-# Remove ambiguous mets
-
-#ccmn_norm_mets_good_old <- ccmn_norm_mets_good_old[, !is.na(dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)])]
-#colnames(ccmn_norm_mets_good_old) <- dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)]
-#ccmn_norm_mets_good_old <- rmAmbig(ccmn_norm_mets_good_old)
-
 
 ccmn_norm_mets_good_old <- cbind.data.frame(ccmn_norm_mets_good_old, 
                                             swarmBin[match(gsub("\\_.*|(PA14).*", 

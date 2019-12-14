@@ -82,16 +82,17 @@ getInteresting <- function(relEnzs, threshold = 100){
 }
 
 fellaSignEnzymesOPLSDAQuantInteresting <- getInteresting(fellaSignEnzymesOPLSDAQuant)
+write.csv(fellaSignEnzymesOPLSDAQuantInteresting, file = "fellaSignEnzymesOPLSDAQuantInteresting.csv")
 
 
 
-BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaEnzymesSignGenesInteresting$Annotation[1]]]$DNAAlignment)
-BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaEnzymesSignGenesInteresting$Annotation[2]]]$DNAAlignment)
-BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaEnzymesSignGenesInteresting$Annotation[3]]]$DNAAlignment)
-BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaEnzymesSignGenesInteresting$Annotation[4]]]$DNAAlignment)
-BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaEnzymesSignGenesInteresting$Annotation[5]]]$DNAAlignment)
-BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaEnzymesSignGenesInteresting$Annotation[6]]]$DNAAlignment)
-BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaEnzymesSignGenesInteresting$Annotation[7]]]$DNAAlignment)
+BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaSignEnzymesOPLSDAQuantInteresting$Annotation[1]]]$DNAAlignment)
+BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaSignEnzymesOPLSDAQuantInteresting$Annotation[2]]]$DNAAlignment)
+BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaSignEnzymesOPLSDAQuantInteresting$Annotation[3]]]$DNAAlignment)
+BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaSignEnzymesOPLSDAQuantInteresting$Annotation[4]]]$DNAAlignment)
+BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaSignEnzymesOPLSDAQuantInteresting$Annotation[5]]]$DNAAlignment)
+BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaSignEnzymesOPLSDAQuantInteresting$Annotation[6]]]$DNAAlignment)
+BrowseSeqs(ParsedSubGraphs_allStrains_named[[fellaSignEnzymesOPLSDAQuantInteresting$Annotation[7]]]$DNAAlignment)
 
 variantsDiffGenesFellaOPLSDAQuant <- variantsPerGene(ParsedSubGraphsNamed_objct = ParsedSubGraphs_allStrains_named, 
                                                      IDDiffGenes = diffGenesSwarmBin, 

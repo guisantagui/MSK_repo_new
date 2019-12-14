@@ -465,14 +465,14 @@ decTrees <- sum1$used
 
 results$optVariables[results$optVariables %in% sum1$used]
 mannWhit_old[mannWhit_old %in% results$optVariables[1:20]]
-overlapFeats <- list("RFE" = RFE[1:20], 
-                     "Decision trees" = decTrees, 
-                     "Mann-Whitney mining" = mannWhit_old, 
-                     "Fisher test" = fish_old)
+overlapFeats <- list("RFE" = RFE[1:35], 
+                     #"Decision trees" = decTrees, 
+                     #"Fisher test" = fish_old, 
+                     "Mann-Whitney mining" = mannWhit_old)
 
 vennOld_impFeats <- Venn(Sets = overlapFeats)
 tiff(filename = "overlapImpFeats.tiff", height = 1400, width = 1800, res = 300)
-plot(vennOld_impFeats, doWeights = F, type = "ellipses")
+plot(vennOld_impFeats, doWeights = T, type = "circles")
 dev.off()
 
 # Select the ones that have at least one overlap a
