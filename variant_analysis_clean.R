@@ -439,7 +439,6 @@ csvOutSignDiff <- function(kruskSign, diffMets = NULL, metNames, spitOut = F){
         signDiffAA <- list()
         signDiffAA_enz <- list()
         for(i in seq_along(kruskSignFiltDNA)){
-                print(i)
                 signDiffDNA[[i]] <- t(as.matrix(names(kruskSignFiltDNA[[i]])))
                 signDiffDNA_enz[[i]] <- t(as.matrix(names(kruskSignFiltDNA[[i]])[grep("EC", names(kruskSignFiltDNA[[i]]))]))
                 signDiffAA[[i]] <- t(as.matrix(names(kruskSignFiltAA[[i]])))
@@ -475,14 +474,17 @@ outPut1_2_old <- csvOutSignDiff(kruskSign = kruskSign1_2_old,
                                 diffMets =  diffMets_oldGood[, 1], 
                                 metNames = colnames(ccmn_norm_mets_good_old), 
                                 spitOut = T)
+save(outPut1_2_old, file = "outPut1_2_old.RData")
 outPut1_2_new <- csvOutSignDiff(kruskSign = kruskSign1_2_new, 
                                 diffMets =  diffMets_newData[, 1], 
                                 metNames = colnames(ccmn_norm_mets_newData), 
                                 spitOut = T)
+save(outPut1_2_old, file = "outPut1_2_new.RData")
 outPut1_2_hyb <- csvOutSignDiff(kruskSign = kruskSign1_2_hyb, 
                                 diffMets =  diffMets_hybrid[, 1], 
                                 metNames = colnames(ccmn_norm_mets_hybrid), 
                                 spitOut = T)
+save(outPut1_2_old, file = "outPut1_2_hyb.RData")
 
 outPut1_2_oldfiltOPLSDAEnzDNA <- outPut1_2_old$DNA_enz[, colnames(outPut1_2_old$DNA_enz) %in% OPLSDAQuantResultKEGGIDs]
 outPut1_2_oldfiltOPLSDAEnzAA <- outPut1_2_old$AA_enz[, colnames(outPut1_2_old$AA_enz) %in% OPLSDAQuantResultKEGGIDs]
