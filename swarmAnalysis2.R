@@ -370,13 +370,18 @@ table(ccmn_norm_mets_good_old$swarmData[-as.vector(inTrain)],
 OPLSDAQuantLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQuant)[, 1],
                           getLoadingMN(ccmnNormOPLSDAQuant, orthoL = T))
 colnames(OPLSDAQuantLoads)[1] <- "p1"
+
+OPLSDAQuantLoads <- getLoadingMN(ccmnNormOPLSDAQuant)
+
 OPLSDAQualLoads <- cbind(getLoadingMN(ccmnNormOPLSDAQual)[, 1],
                          getLoadingMN(ccmnNormOPLSDAQual, orthoL = T))
 colnames(OPLSDAQualLoads)[1] <- "p1"
 
+OPLSDAQualLoads <- getLoadingMN(ccmnNormOPLSDAQual)
+
 # Obtain the 3variables with most extreme loading values (positive and negative) of each component
-extremValsOPLSDAQual <- getExtremVals(OPLSDAQualLoads, n = 3)
-extremValsOPLSDAQuant <- getExtremVals(OPLSDAQuantLoads, n = 3)
+extremValsOPLSDAQual <- getExtremVals(OPLSDAQualLoads, n = 14)
+extremValsOPLSDAQuant <- getExtremVals(OPLSDAQuantLoads, n = 14)
 
 OPLSDAQualResult <- dictionary$Consensus[match(extremValsOPLSDAQual$uniqueExtremeVars, make.names(dictionary$`Old Data Names`))]
 OPLSDAQualResult <- OPLSDAQualResult[!is.na(OPLSDAQualResult)]
@@ -393,6 +398,11 @@ OPLSDAQuantResult <- rmAmbig(OPLSDAQuantResult)
 OPLSDAQuantResultKEGGIDs <- dictionary$`KEGG IDs`[match(OPLSDAQuantResult, dictionary$Consensus)]
 OPLSDAQuantResultKEGGIDs <- OPLSDAQuantResultKEGGIDs[!is.na(OPLSDAQuantResultKEGGIDs)]
 save(OPLSDAQuantResultKEGGIDs, file = "OPLSDAQuantResultKEGGIDs.RData")
+
+OPLSDAQualResultTab <- cbind(dictionary$Consensus[match(OPLSDAQualResultKEGGIDs, dictionary$`KEGG IDs`)], OPLSDAQualResultKEGGIDs)
+OPLSDAQuantResultTab <- cbind(dictionary$Consensus[match(OPLSDAQuantResultKEGGIDs, dictionary$`KEGG IDs`)], OPLSDAQuantResultKEGGIDs)
+write.csv(OPLSDAQualResultTab, file = "OPLSDAQualResultTab.csv")
+write.csv(OPLSDAQuantResultTab, file = "OPLSDAQuantResultTab.csv")
 
 ORA_OPLSDAQual <- doORA(OPLSDAQualResultKEGGIDs, allMets, org = "pae")
 ORA_OPLSDAQuant <- doORA(OPLSDAQuantResultKEGGIDs, allMets, org = "pae")
@@ -690,6 +700,17 @@ dev.off()
 
 geneEnzTabFiltGrouped <- cbind.data.frame(geneEnzTabFiltGrouped, swarmMeansRearr[-1])
 colnames(geneEnzTabFiltGrouped)[ncol(geneEnzTabFiltGrouped)] <- "swarmQuant"
+
+ccmnNormPCA <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)])
+swarmData <- ccmn_norm_mets_good_old$swarmData
+plot(ccmnNormPCA,
+     typeVc = "x-score",
+     parAsColFcVn = swarmData)
+
+geneEnzTabPCA <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)])
+plot(geneEnzTabPCA,
+     typeVc = "x-score",
+     parAsColFcVn = geneEnzTabFiltGrouped$swarmData)
 
 tiff(filename = "geneEnzTabOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
 geneEnzTabOPLSDAQuant <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)],
