@@ -332,9 +332,17 @@ colnames(ccmn_norm_mets_good_old)[ncol(ccmn_norm_mets_good_old)] <- "swarmQuant"
 
 ccmnNormPCA <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)])
 swarmData <- ccmn_norm_mets_good_old$swarmData
+tiff(filename = "pcaMetDataSwarmQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
 plot(ccmnNormPCA,
      typeVc = "x-score",
      parAsColFcVn = swarmData)
+dev.off()
+
+tiff(filename = "pcaMetDataSwarmQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+plot(ccmnNormPCA,
+     typeVc = "x-score",
+     parAsColFcVn = ccmn_norm_mets_good_old$swarmQuant)
+dev.off()
 
 ccmnNormPLSQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmQuant)
 ccmnNormPLSQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)], ccmn_norm_mets_good_old$swarmData)
@@ -545,8 +553,28 @@ totPathsInMets <- unique(unlist(sapply(allMets, keggLink, target = "pathway")))
 totPathsInMets <- totPathsInMets[gsub("map", replacement = "pae", totPathsInMets) %in% names(paePaths)]
 compsPerPathAllPaths <- sapply(totPathsInMets, keggLink, target = "compound")
 
-randORARFE <- lapply(sampleMetsRFE, doORAMod)
-randORAOPLSDA <- lapply(sampleMetsOPLSDA, doORAMod)
+randORARFE <- lapply(sampleMetsRFE, doORAMod, alpha = 2)
+randORAOPLSDA <- lapply(sampleMetsOPLSDA, doORAMod, alpha = 2)
+ORARFEReal <- doORA(rfeResultKEGGIDs, alpha = 2, allMetsObjkt = allMets, org = "pae")
+ORAOPLSDAReal <- doORA(OPLSDAQuantResult, alpha = 2, allMetsObjkt = allMets, org = "pae")
+
+getRandEnrichment <- function(randTest, realTest){
+        pathsRandPermPval <- c()
+        for(i in 1:nrow(realTest)){
+                pathRandPvals <- sapply(randTest, function(x) x$p.values[i])
+                pathPVal <- sum(pathRandPvals <= realTest$p.values[i])/length(randTest)
+                pathsRandPermPval <- c(pathsRandPermPval, pathPVal)
+        }
+        names(pathsRandPermPval) <- realTest$Pathways
+        return(pathsRandPermPval)
+}
+
+pathsRandPermPvalORARFE <- getRandEnrichment(randORARFE, ORARFEReal)
+pathsRandPermPvalORAOPLSDA <- getRandEnrichment(randORAOPLSDA, ORAOPLSDAReal)
+
+# with random values the probability of getting the same enriched pathways than with ours is very small.
+# all pvalues much bigger than 0.05
+
 
 ####################################################################################################################
 ####################################################################################################################
@@ -701,16 +729,19 @@ dev.off()
 geneEnzTabFiltGrouped <- cbind.data.frame(geneEnzTabFiltGrouped, swarmMeansRearr[-1])
 colnames(geneEnzTabFiltGrouped)[ncol(geneEnzTabFiltGrouped)] <- "swarmQuant"
 
-ccmnNormPCA <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)])
-swarmData <- ccmn_norm_mets_good_old$swarmData
-plot(ccmnNormPCA,
-     typeVc = "x-score",
-     parAsColFcVn = swarmData)
-
 geneEnzTabPCA <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)])
+
+tiff(filename = "pcaEnzDataSwarmQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
 plot(geneEnzTabPCA,
      typeVc = "x-score",
      parAsColFcVn = geneEnzTabFiltGrouped$swarmData)
+dev.off()
+
+tiff(filename = "pcaEnzDataSwarmQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+plot(geneEnzTabPCA,
+     typeVc = "x-score",
+     parAsColFcVn = geneEnzTabFiltGrouped$swarmQuant)
+dev.off()
 
 tiff(filename = "geneEnzTabOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
 geneEnzTabOPLSDAQuant <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)],

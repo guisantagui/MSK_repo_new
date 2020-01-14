@@ -55,7 +55,7 @@ doORAMod <- function(diffMetObjkt, alpha = 0.05){
         sign <- fishRes[vecTrue]
         pVals <- sapply(sign, function(f) f$p.value)
         names(pVals) <- gsub("map", replacement = "pae", names(pVals))
-        signMat <- cbind.data.frame(paths[names(paths) %in% names(pVals)], pVals)
+        signMat <- cbind.data.frame(paths[match(names(pVals), names(paths))], pVals)
         colnames(signMat) <- c("Pathways", "p.values")
         return(signMat)
 }

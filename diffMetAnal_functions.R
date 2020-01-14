@@ -156,7 +156,7 @@ doORA <- function(diffMetObjkt, allMetsObjkt, org = NULL, alpha = 0.05){
         sign <- fishRes[vecTrue]
         pVals <- sapply(sign, function(f) f$p.value)
         if(!is.null(org)){names(pVals) <- gsub("map", replacement = org, names(pVals))}
-        signMat <- cbind.data.frame(paths[names(paths) %in% names(pVals)], pVals)
+        signMat <- cbind.data.frame(paths[match(names(pVals), names(paths))], pVals)
         colnames(signMat) <- c("Pathways", "p.values")
         return(signMat)
 }

@@ -535,8 +535,8 @@ totPathsInMets <- unique(unlist(sapply(allMets, keggLink, target = "pathway")))
 totPathsInMets <- totPathsInMets[gsub("map", replacement = "pae", totPathsInMets) %in% names(paePaths)]
 compsPerPathAllPaths <- sapply(totPathsInMets, keggLink, target = "compound")
 
-randORARFE <- lapply(sampleMetsRFE, doORAMod)
-randORAOPLSDA <- lapply(sampleMetsOPLSDA, doORAMod)
+randORARFE <- lapply(sampleMetsRFE, doORAMod, alpha = 2)
+randORAOPLSDA <- lapply(sampleMetsOPLSDA, doORAMod, alpha = 2)
 
 ####################################################################################################################
 ####################################################################################################################
