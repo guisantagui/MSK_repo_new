@@ -715,7 +715,11 @@ diffGenesPerMet_oldGood_filtEnz <- filtMannWhitTabs(allDiffGenes_oldGood_filtEnz
 
 swarmRelated <- diffGenesPerMet_oldGood_filt$Total$`1&2`[names(diffGenesPerMet_oldGood_filt$Total$`1&2`) %in% OPLSDAQuantResultKEGGIDs]
 
+swarmRelated <- unlist(swarmRelated)[-grep("group", unlist(swarmRelated))]
+
 swarmRelated_enz <- diffGenesPerMet_oldGood_filtEnz$Total$`1&2`[names(diffGenesPerMet_oldGood_filtEnz$Total$`1&2`) %in% OPLSDAQuantResultKEGGIDs]
+
+swarmRelated_enz <- unlist(swarmRelated_enz)[-grep("group", unlist(swarmRelated_enz))]
 
 swarmRel_enz_ECs <- apply(dictEnzymes[dictEnzymes$Gene %in% unlist(swarmRelated), 34:ncol(dictEnzymes)], 1, function(x) unique(x)[!is.na(unique(x))][1])
 
