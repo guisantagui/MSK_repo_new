@@ -32,6 +32,7 @@ apply(SDs, 2, rank)[9, ]
 doAnovas <- function(metMat){
         groups <- gsub("_.*", replacement = "", rownames(metMat))
         pVals <- c()
+        aovAllRes <- list()
         for(i in 1:ncol(metMat)){
                data <- cbind.data.frame(metMat[, i], groups)
                colnames(data) <- c("abundance", "groups")
@@ -39,11 +40,24 @@ doAnovas <- function(metMat){
                summ <- summary(res.aov)
                pVal <- summ[[1]]$`Pr(>F)`[1]
                pVals <- c(pVals, pVal)
+               aovAllRes[[i]] <- res.aov
         }
         names(pVals) <- colnames(metMat)
-        return(pVals)
+        names(aovAllRes) <- colnames(metMat)
+        return(list("p.values" = pVals, "allANOVA" = aovAllRes))
 }
-doAnovas(ccmnNormMets)
+anovasStrains <- doAnovas(ccmnNormMets)
+
+
+data <- cbind.data.frame(ccmnNormMets, groups)
+colnames(data) <- make.names(colnames(data))
+
+resANOVA <- aov(as.formula(paste(colnames(data)[1],"groups", sep = " ~ ")), data = data)
+
+for(i in 1:length(anovasStrains$allANOVA)){
+        plot(anovasStrains$allANOVA[[i]], 1, main = names(anovasStrains$allANOVA[i]))
+}
+plot(resANOVA, 1)
 
 doGroupAnovas <- function(metMat){
         rep1 <- which(((1:28) + 2) %% 3 == 0)
