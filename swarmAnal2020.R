@@ -79,9 +79,9 @@ fviz_pca_ind(pcaMets,
 dev.off()
 
 # Obtain bidirectional correlations between swarming variables.
-corMat <- matrix(ncol = 5, nrow = 5)
-rownames(corMat) <- colnames(swarmDat[, 2:6])
-colnames(corMat) <- colnames(swarmDat[, 2:6])
+corMat <- matrix(ncol = ncol(swarmDat) - 2, nrow = ncol(swarmDat) - 2)
+rownames(corMat) <- colnames(swarmDat[, 2:(ncol(swarmDat) - 1)])
+colnames(corMat) <- colnames(swarmDat[, 2:(ncol(swarmDat) - 1)])
 for(i in 1:ncol(corMat)){
         for(j in 1:nrow(corMat)){
                 corMat[i, j] <- cor(swarmDat[[rownames(corMat)[j]]],
@@ -93,9 +93,12 @@ corMat
 
 
 
-swarmDat
+# Do PCA with the different measures of swarming. We first normalize them by dividing each column by its
+# highest value. That way all values range from 0 to 1. THe idea is to get a linear combination of the
+# measures that spreads most of the variability of the strains and that we could use as the response 
+# variable for the supervised analysis. 
 
-m <- swarmDat[, c(3, 4)]
+m <- swarmDat[, 3:4]
 
 m <- apply(m, 2, function(x) x/max(x))
 rownames(m) <- make.unique(gsub(".tif", replacement = "", swarmDat$Strains))
@@ -103,13 +106,18 @@ rownames(m) <- make.unique(gsub(".tif", replacement = "", swarmDat$Strains))
 
 pcaSwarms <- prcomp(m)
 
+
+tiff("pcaSwarmMeasures.tiff", res = 300, height = 5000, width = 5000)
 fviz_pca_ind(pcaSwarms, 
              #col.ind = swarmDatMeansFilt$MaxLength,
              #gradient.cols = c("#003CFF", "#66FF00", "#FF0000"),
              #legend.title = "Maximum Length"
              )
+dev.off()
 
+tiff("biplotSwarmMeasures.tiff", res = 300, height = 5000, width = 5000)
 fviz_pca_biplot(pcaSwarms)
+dev.off()
 
 distManh <- dist(m, method = "canberra")
 
@@ -147,7 +155,7 @@ names(pcomp1Means) <- groups
 
 
 
-pcomp1MeansFilt <- pcomp1Means[names(pcomp1Means) %in% rownames(ccmnNormMeds)]
+pcomp1MeansFilt <- pcomp1Means[names(pcomp1Means) %in% rownames(ccmnNormMets)]
 
 match(gsub("\\_.*|(PA14).*", rownames(ccmnNormMets), rep = "\\1"), names(pcomp1Means))
 
@@ -164,4 +172,6 @@ fviz_pca_ind(pcaMets,
              legend.title = "PrComp1")
 dev.off()
 
+pcomp1Means
 
+save(pcomp1Means, file = "pcomp1AreaPercCircularity.RData")

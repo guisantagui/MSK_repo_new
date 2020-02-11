@@ -143,6 +143,7 @@ for(i in seq_along(strain_names)){
         dictEnzymes <- cbind.data.frame(dictEnzymes, ecVec, stringsAsFactors = F)
 }
 
+
 #GFF file of UCBPP-PA14 doesn't have ec numbers
 
 # Look if there are any disrepancies regarding the EC numbers of the genes in the table.
@@ -160,7 +161,13 @@ for(i in seq_along(which(discrepVec))){
         genesWDiscrep[[i]] <- dup
 }
 names(genesWDiscrep) <- dictEnzymes$Gene[which(discrepVec)]
-dictEnzymes[99, ]
+
+ECnums <- apply(dictEnzymes[, 34:ncol(dictEnzymes)], 1, function(x) names(sort(table(x), decreasing = T))[1])
+
+dictEnzymes <- cbind.data.frame(dictEnzymes[, 1:33], ECnums)
+
+save(dictEnzymes, file = "dictEnzymes.RData")
+
 # There are 56 genes with discrepancies according to the EC number. We're gonna align them to see if any of them looks very 
 # different to the other ones.
 if(!require(DECIPHER)) install.packages("DECIPHER")
