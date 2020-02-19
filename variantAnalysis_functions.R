@@ -20,10 +20,10 @@ identifyDiffGenes <- function(ParsedSubGraphsNamed_objt, strainGroups, p_adjust 
         mannWhitResAA <- c()
         namesGenes <- names(ParsedSubGraphsNamed_objt)
         pb = txtProgressBar(min = 0, max = length(ParsedSubGraphsNamed_objt), initial = 0)
-        for(i in seq_along(ParsedSubGraphs_allStrains_named)){
+        for(i in seq_along(ParsedSubGraphsNamed_objt)){
                 subMat1DNA <- ParsedSubGraphsNamed_objt[[i]]$DNADist[as.integer(gsub("_.*", 
                                                                                      replacement = "", 
-                                                                                     colnames(ParsedSubGraphs_allStrains_named[[i]]$DNADist)))
+                                                                                     colnames(ParsedSubGraphsNamed_objt[[i]]$DNADist)))
                                                                      %in% which(strainGroups == 1), 
                                                                      as.integer(gsub("_.*", 
                                                                                      replacement = "", 
@@ -129,7 +129,7 @@ variantsPerGene <- function(ParsedSubGraphsNamed_objct, IDDiffGenes, strainNames
         variantsDNA <- list()
         pbDNA = txtProgressBar(min = 0, max = nrow(IDDiffGenes$significativeGenes_DNA), initial = 0)
         for(i in 1:nrow(IDDiffGenes$significativeGenes_DNA)){
-                DNAAlign <- ParsedSubGraphsNamed_objct[[IDDiffGenes$significativeGenes_DNA[i, 1]]]$DNAAlignment
+                DNAAlign <- ParsedSubGraphsNamed_objct[[as.character(IDDiffGenes$significativeGenes_DNA[i, 1])]]$DNAAlignment
                 strainVarVecDNA <- rep(NA, length(strainNames))
                 names(strainVarVecDNA) <- strainNames
                 for(j in 1:length(unique(DNAAlign))){
@@ -149,7 +149,7 @@ variantsPerGene <- function(ParsedSubGraphsNamed_objct, IDDiffGenes, strainNames
         variantsAA <- list()
         pbAA = txtProgressBar(min = 0, max = nrow(IDDiffGenes$significativeGenes_AA), initial = 0)
         for(l in 1:nrow(IDDiffGenes$significativeGenes_AA)){
-                AAAlign <- ParsedSubGraphsNamed_objct[[IDDiffGenes$significativeGenes_AA[l, 1]]]$AAAlignment
+                AAAlign <- ParsedSubGraphsNamed_objct[[as.character(IDDiffGenes$significativeGenes_AA[l, 1])]]$AAAlignment
                 strainVarVecAA <- rep(NA, length(strainNames))
                 names(strainVarVecAA) <- strainNames
                 for(m in 1:length(unique(AAAlign))){
@@ -177,10 +177,14 @@ divStrainMetsVars <- function(variants, metsAbundance){
         for(i in seq_along(variants$DNA)){
                 subMatsDNA <- list()
                 for(j in 1:max(variants$DNA[[i]])){
-                        subMatsDNA[[j]] <- metsAbundance[grepl(pattern = paste(names(which(variants$DNA[[i]] == j)), 
-                                                                               collapse = "|"),
-                                                               rownames(metsAbundance)), ]
+                        submatDNA <- metsAbundance[grepl(pattern = paste(names(which(variants$DNA[[i]] == j)), 
+                                                                         collapse = "|"),
+                                                         rownames(metsAbundance)), ]
+                        if(nrow(submatDNA) > 0){
+                                subMatsDNA[[j]] <- submatDNA
+                        }
                 }
+                subMatsDNA <- subMatsDNA[!unlist(lapply(subMatsDNA, is.null))]
                 divMetMatsDNA[[i]] <- subMatsDNA
         }
         names(divMetMatsDNA) <- names(variants$DNA)
@@ -188,10 +192,14 @@ divStrainMetsVars <- function(variants, metsAbundance){
         for(k in seq_along(variants$AA)){
                 subMatsAA <- list()
                 for(l in 1:max(variants$AA[[k]])){
-                        subMatsAA[[l]] <- metsAbundance[grepl(pattern = paste(names(which(variants$AA[[k]] == l)), 
-                                                                              collapse = "|"),
-                                                              rownames(metsAbundance)), ]
+                        subMatAA <- metsAbundance[grepl(pattern = paste(names(which(variants$AA[[k]] == l)), 
+                                                                        collapse = "|"),
+                                                        rownames(metsAbundance)), ]
+                        if(nrow(subMatAA) > 0){
+                                subMatsAA[[l]] <- subMatAA
+                        }
                 }
+                subMatsAA <- subMatsAA[!unlist(lapply(subMatsAA, is.null))]
                 divMetMatsAA[[k]] <- subMatsAA
         }
         names(divMetMatsAA) <- names(variants$AA)

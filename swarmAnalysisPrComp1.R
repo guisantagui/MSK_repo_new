@@ -365,6 +365,21 @@ colnames(OPLSDAQualLoads)[1] <- "p1"
 
 OPLSDAQualLoads <- getLoadingMN(ccmnNormOPLSDAQual)
 
+# Make barplot of loadings for OPLSDA quantitative. Previously we're gonna remove the ambiguous compounds.
+
+OPLSDAQuantLoadsRmAmbig <- OPLSDAQuantLoads
+rownames(OPLSDAQuantLoadsRmAmbig) <- dictionary$Consensus[match(rownames(OPLSDAQuantLoads), make.names(dictionary$`Old Data Names`))]
+OPLSDAQuantLoadsRmAmbig <- OPLSDAQuantLoadsRmAmbig[!is.na(rownames(OPLSDAQuantLoadsRmAmbig)), ]
+OPLSDAQuantLoadsRmAmbig <- OPLSDAQuantLoadsRmAmbig[-grep("_?", names(OPLSDAQuantLoadsRmAmbig), fixed = T)]
+OPLSDAQuantLoadsRmAmbig <- cbind.data.frame(names(OPLSDAQuantLoadsRmAmbig), OPLSDAQuantLoadsRmAmbig)
+colnames(OPLSDAQuantLoadsRmAmbig) <- c("metabolite", "loading")
+
+ggplot(data = OPLSDAQuantLoadsRmAmbig,
+       aes(x = reorder(metabolite, loading), y = loading)) +
+  labs(x = "compound", y = "OPLS-DA Loading") +
+  geom_bar(stat = "identity") +
+  coord_flip()
+ggsave(filename = "OPLSDAQuantLoadsBarplot.tiff")
 # Obtain the 3variables with most extreme loading values (positive and negative) of each component
 extremValsOPLSDAQual <- getExtremVals(OPLSDAQualLoads, n = 14)
 extremValsOPLSDAQuant <- getExtremVals(OPLSDAQuantLoads, n = 14)

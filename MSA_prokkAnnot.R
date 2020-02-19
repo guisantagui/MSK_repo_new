@@ -31,29 +31,29 @@ library(ape)
 # structured in contigs).---> ONLY RUN THIS IF IT'S THE FIRST TIME RUNNING THE SCRIPT
 #
 ########################################################################################################################################################
-db_full_genomes <- paste(paste(getwd(), "/", sep = ""), "PA_strain_full_genomes.sqlite", sep = "")    #-->Only run this if it's the first time running the script
+db_full_genomes_new <- paste(paste(getwd(), "/", sep = ""), "PA_strain_full_genomes_new.sqlite", sep = "")    #-->Only run this if it's the first time running the script
 
-full_seqs <- c()    #-->Only run this if it's the first time running the script
-for(i in 1:(length(list.files(path = "../../Sequences/FASTA_full_genomes/my_strains")) - 1)){     #-->Only run this if it's the first time running the script
-        full_seqs <- c(full_seqs, paste("../../Sequences/FASTA_full_genomes/my_strains/", 
-                                            list.files(path = "../../Sequences/FASTA_full_genomes/my_strains")[i + 1],
-                                            sep = ""))
+full_seqs_new <- c()    #-->Only run this if it's the first time running the script
+for(i in 1:(length(list.files(path = "/Users/santamag/Desktop/GUILLEM/Sequences/newSeqs/Archive")))){     #-->Only run this if it's the first time running the script
+        full_seqs_new <- c(full_seqs_new, paste("/Users/santamag/Desktop/GUILLEM/Sequences/newSeqs/Archive/", 
+                                                list.files(path = "/Users/santamag/Desktop/GUILLEM/Sequences/newSeqs/Archive")[i],
+                                                sep = ""))
 }
-names(full_seqs) <- gsub(".fasta", "", list.files(path = "../../Sequences/FASTA_full_genomes/my_strains/Seqs")[1:26])    #-->Only run this if it's the first time running the script
+names(full_seqs_new) <- gsub(".fasta|.fna", "", list.files(path = "/Users/santamag/Desktop/GUILLEM/Sequences/newSeqs/Archive"))    #-->Only run this if it's the first time running the script
 
 
 
-for (i in seq_along(full_seqs)) {   #-->Only run this if it's the first time running the script
-        Seqs2DB(full_seqs[i], "FASTA", db_full_genomes, names(full_seqs[i]))
+for (i in seq_along(full_seqs_new)) {   #-->Only run this if it's the first time running the script
+        Seqs2DB(full_seqs_new[i], "FASTA", db_full_genomes_new, names(full_seqs_new[i]))
 }
 #######################################################################################################################################################
 #
 # Find syntenic blocks between pairs of strains
 #
 #######################################################################################################################################################
-synteny_full_seqs <- FindSynteny(db_full_genomes)#-->In this is the first time running this script run those 2 lines
-save(synteny_full_seqs, file = "synteny_full_seqs.RData")
-load("synteny_full_seqs.RData")
+synteny_full_seqs_new <- FindSynteny(db_full_genomes_new)#-->In this is the first time running this script run those 2 lines
+save(synteny_full_seqs_new, file = "synteny_full_seqs_new.RData")
+load("synteny_full_seqs_new.RData")
 
 #######################################################################################################################################################
 #
@@ -98,6 +98,7 @@ for(i in 1:length(list.files(path = "/Users/santamag/Desktop/GUILLEM/prokkAnnotS
         gff$Annotation <- geneNames
         gff <- gff[!gff$Strand == 2, ]
         gff <- gff[!is.na(gff$Annotation), ]
+        rownames(gff) <- 1:nrow(gff)
         geneCallsAllStrains4HeronProkka[[i]] <- gff
 }
 names(geneCallsAllStrains4HeronProkka) <- namesCalls
@@ -125,31 +126,33 @@ gff1[c(2771, 5300, 5313), ]
 # Start pipeline
 #
 #######################################################################################################################################################
-overlap_all_strains <- NucleotideOverlap(SyntenyObject = synteny_full_seqs,
-                                         GeneCalls = geneCallsAllStrains4Heron,
+overlap_all_strains <- NucleotideOverlap(SyntenyObject = synteny_full_seqs_new,
+                                         GeneCalls = geneCallsAllStrains4HeronProkka,
                                          Verbose = T)
-save(overlap_all_strains, file = "overlap_all_strains.RData")
+overlap_all_strains_new <- overlap_all_strains
+save(overlap_all_strains_new, file = "overlap_all_strains_new.RData")
 
-load("overlap_all_strains.RData")
+load("overlap_all_strains_new.RData")
 
-orthologList_allStrains <- GetOrthologSummary(OrthologsObject = overlap_all_strains,
-                                              GeneCalls = geneCallsAllStrains4Heron,
-                                              DBPath = "PA_strain_full_genomes.sqlite",
+orthologList_allStrains <- GetOrthologSummary(OrthologsObject = overlap_all_strains_new,
+                                              GeneCalls = geneCallsAllStrains4HeronProkka,
+                                              DBPath = "PA_strain_full_genomes_new.sqlite",
                                               SimilarityScores = FALSE,
                                               Type = "AAStringSet",
                                               Verbose = TRUE)
-save(orthologList_allStrains, file = "orthologList_allStrains.RData")
-load("orthologList_allStrains.RData")
+orthologList_allStrains_new <- orthologList_allStrains
+save(orthologList_allStrains_new, file = "orthologList_allStrains_new.RData")
+load("orthologList_allStrains_new.RData")
 
-ResolvedOrthologs_allStrains <- ResolveConflicts(SummaryObject = orthologList_allStrains,
-                                                 ResolveBy = "TotalCoverage",
-                                                 Verbose = TRUE)
+ResolvedOrthologs_allStrains_new <- ResolveConflicts(SummaryObject = orthologList_allStrains_new,
+                                                     ResolveBy = "TotalCoverage",
+                                                     Verbose = TRUE)
 
-save(ResolvedOrthologs_allStrains, file = "ResolvedOrthologs_allStrains.RData")
-load("ResolvedOrthologs_allStrains.RData")
+save(ResolvedOrthologs_allStrains_new, file = "ResolvedOrthologs_allStrains_new.RData")
+load("ResolvedOrthologs_allStrains_new.RData")
 
 Labels_allStrains <- do.call(rbind,
-                             sapply(rownames(ResolvedOrthologs_allStrains),
+                             sapply(rownames(ResolvedOrthologs_allStrains_new),
                                     function(x) strsplit(x,
                                                          split = " ")))
 Graph_allStrains <- graph_from_edgelist(el = Labels_allStrains,
@@ -159,14 +162,15 @@ SubGraphs_allStrains <- groups(components(Graph_allStrains))
 
 print("SubGraphs Generated")
 
-ParsedSubGraphs_allStrains <- ParseSubGraphs(SubGraphs = SubGraphs_allStrains,
-                                  DBPATH = "PA_strain_full_genomes.sqlite",
-                                  GeneCalls = geneCallsAllStrains4Heron,
+ParsedSubGraphs_allStrains_new <- ParseSubGraphs(SubGraphs = SubGraphs_allStrains,
+                                  DBPATH = "PA_strain_full_genomes_new.sqlite",
+                                  GeneCalls = geneCallsAllStrains4HeronProkka,
                                   CopyType = "Single",
                                   InputType = "Groups",
                                   OriginGraph = Graph_allStrains,
                                   Verbose = TRUE)
-load("ParsedSubGraphs_allStrains.RData")
+save(ParsedSubGraphs_allStrains_new, file = "ParsedSubGraphs_allStrains_new.RData")
+load("ParsedSubGraphs_allStrains_new.RData")
 
 print("SubGraphs Parsed")
 
@@ -188,10 +192,11 @@ matchAnnot <- function(parsed, calls){
         pb = txtProgressBar(min = 0, max = length(parsed), initial = 0)
         for(i in seq_along(parsed)){
                 names_g <- c()
-                for(j in 1:ncol(parsed[[i]]$DNADist)){
-                        names_g <- c(names_g, as.character(calls[[j]][as.integer(gsub(".*_", 
-                                                                                      replacement = "", 
-                                                                                      colnames(parsed[[i]]$DNADist)[j])), 5]))
+                strsWgene <- as.integer(gsub("_.*", replacement = "", colnames(parsed[[i]]$DNADist)))
+                for(j in 1:length(strsWgene)){
+                        names_g <- c(names_g, as.character(calls[[strsWgene[j]]][as.integer(gsub(".*_", 
+                                                                                                 replacement = "", 
+                                                                                                 colnames(parsed[[i]]$DNADist)[j])), 5]))
                 }
                 setTxtProgressBar(pb, i)
                 if(AllEqual(names_g)){
@@ -209,12 +214,14 @@ matchAnnot <- function(parsed, calls){
         return(geneNames)
 }
 
-namesGenes <- matchAnnot(ParsedSubGraphs_allStrains, geneCallsAllStrains4Heron)
+
+
+namesGenes <- matchAnnot(ParsedSubGraphs_allStrains_new, geneCallsAllStrains4HeronProkka)
 namesGenes <- make.unique(namesGenes)
 
-ParsedSubGraphs_allStrains_named <- ParsedSubGraphs_allStrains
-names(ParsedSubGraphs_allStrains_named) <- namesGenes
+ParsedSubGraphs_allStrains_named_new <- ParsedSubGraphs_allStrains_new
+names(ParsedSubGraphs_allStrains_named_new) <- namesGenes
 
-save(ParsedSubGraphs_allStrains_named, file = "ParsedSubGraphs_allStrains_named.RData")
-load("ParsedSubGraphs_allStrains_named.RData")
+save(ParsedSubGraphs_allStrains_named_new, file = "ParsedSubGraphs_allStrains_named_new.RData")
+load("ParsedSubGraphs_allStrains_named_new.RData")
 

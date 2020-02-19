@@ -175,3 +175,55 @@ dev.off()
 pcomp1Means
 
 save(pcomp1Means, file = "pcomp1AreaPercCircularity.RData")
+
+# The metabolites that are more correlated with swarming, according to OPLS-DA, are succinate and formyl-methionine.
+
+plot(log(swarmDatMeansFilt$AreaPercentage), ccmnNormMets$`Formyl-methionine`)
+plot(log(swarmDatMeansFilt$AreaPercentage), ccmnNormMets$succinate)
+
+metSwarm <- cbind.data.frame(ccmnNormMets, log(swarmDatMeansFilt$AreaPercentage))
+colnames(metSwarm)[ncol(metSwarm)] <- "logAreaPct"
+colnames(metSwarm) <- make.names(colnames(metSwarm))
+
+# Let's do a PCA of the five metabolites that have highest loadings in OPLS-DA model to get the linear combination of these in 
+# x-axis. 
+pcaSelMets <- prcomp(ccmnNormMets[, c("Formyl-methionine", 
+                                      "2-aminoadipate-6-semialdehyde", 
+                                      "Methylcitrate 1", 
+                                      "succinate", 
+                                      "Acetylhomoserine 2"
+)])
+
+fviz_pca_biplot(pcaSelMets)
+
+# Obtain values of PC1 and add to metSwarm dataframe
+
+metSwarm <- cbind.data.frame(metSwarm, pcaSelMets$x[, 1])
+colnames(metSwarm)[ncol(metSwarm)] <- "prComp1SelMets"
+
+if(!require(ggpubr)) install.packages("ggpubr")
+library(ggplot2)
+if(!require(ggpmisc)) BiocManager::install("ggpmisc")
+library(ggpmisc)
+
+ggscatter(metSwarm, x = "logAreaPct", y = "Formyl.methionine", add = "reg.line") +
+        stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~"), 
+                     label.x = 10)) +
+        stat_regline_equation(label.x = 3, label.y = 13)
+
+ggscatter(metSwarm, x = "logAreaPct", y = "succinate", add = "reg.line") +
+        stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~"), 
+                     label.x = 9)) +
+        stat_regline_equation(label.x = 3, label.y = 10)
+
+ggscatter(metSwarm, x = "logAreaPct", y = "prComp1SelMets", add = "reg.line") +
+       stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~"), 
+                    label.x = 10, label.y = 3)) +
+       stat_regline_equation(label.x = 3)
+
+
+cor(log(swarmDatMeansFilt$AreaPercentage), pcaSelMets$x[, 1])
+plot(log(swarmDatMeansFilt$AreaPercentage), pcaSelMets$x[, 1])
+
+cor(log(swarmDatMeansFilt$AreaPercentage), ccmnNormMets$`Formyl-methionine`)
+cor(log(swarmDatMeansFilt$AreaPercentage), ccmnNormMets$succinate)
