@@ -283,10 +283,11 @@ for(i in 1:nrow(signFiltered1_2OldDNAEnzymatic)){
                                C1_2_old)
         p <- ggplot(dists, aes(x=measure, y=distance)) + 
                 geom_boxplot() + geom_jitter(shape=16, position=position_jitter(0.2))
+        p
         plotListDNA[[i]] <- p
 }
 names(plotListDNA) <- signFiltered1_2OldDNAEnzymatic$Annotation
-
+plotListDNA[1]
 plotListAA <- list()
 for(i in 1:nrow(signFiltered1_2OldAAEnzymatic)){
         dists <- getGroupDists(ParsedSubGraphs_allStrains_named_new, 
@@ -295,6 +296,7 @@ for(i in 1:nrow(signFiltered1_2OldAAEnzymatic)){
                                C1_2_old)
         p <- ggplot(dists, aes(x=measure, y=distance)) + 
                 geom_boxplot() + geom_jitter(shape=16, position=position_jitter(0.2))
+        p
         plotListAA[[i]] <- p
 }
 names(plotListAA) <- signFiltered1_2OldAAEnzymatic$Annotation
