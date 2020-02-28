@@ -35,6 +35,8 @@ getSwarmDataMeans <- function(swarmMat){
 }
 swarmDatMeans <- getSwarmDataMeans(swarmDat)
 
+save(swarmDatMeans, file = "swarmDatMeans.RData")
+
 swarmDatMeansFilt <- swarmDatMeans[match(gsub("\\_.*|(PA14).*", 
                                               rownames(ccmnNormMets), 
                                               rep = "\\1"), 

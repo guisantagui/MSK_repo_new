@@ -744,7 +744,7 @@ save(presAbsC1_2Genes_old_filtEnz, file = "presAbsC1_2Genes_old_filtEnz.RData")
 save(C1_2Genes_old_filtEnz, file = "C1_2Genes_old_filtEnz.RData")
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/presAbsC1_2Genes_old_filtEnz.RData")
 
-tiff("minedDiffGenes_old_filtEnz.tiff", width = 8000, height = 2500, units = "px", pointsize = 100)
+tiff("minedDiffGenes_old_filtEnz.tiff", width = 10000, height = 4000, units = "px", pointsize = 100)
 heatmap.2(presAbsC1_2Genes_old_filtEnz, Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
           col = c("blue", "red"), ColSideColors = cols[match(clustOrdC1_2_old, rownames(gene_tab))], notecol = NULL, trace = "none", xlab = "Strains", 
@@ -768,6 +768,11 @@ heatmap.2(presAbsC1_2Genes_old_filtEnz, Rowv = T, Colv = F, distfun = function(x
           })
 dev.off()
 
+rownames(presAbsC1_2Genes_old_filtEnz)[dictEnzymes$ECnums[match(rownames(presAbsC1_2Genes_old_filtEnz), dictEnzymes$Gene)] %in% tab_OPLSDAQuant$KEGG.id]
+
+dictEnzymes$ECnums[which(dictEnzymes$Gene == "leuB_1")]
+
+rownames(presAbsC1_2Genes_old_filtEnz) %in% dictEnzymes$Gene
 ####################################################################################################################################
 ###################################                        NEW DATA ANALYSIS                     ###################################
 ####################################################################################################################################
