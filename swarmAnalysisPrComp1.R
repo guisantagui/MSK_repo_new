@@ -1034,11 +1034,41 @@ for(ii in 1:nrow(valMetMat)) {
 }
 valMetMat <- getStrainMedian(valMetMat)
 Cols <- unique(Cols)
-tiff("heatmapValBiosynthMets.tiff", width = 6000, height = 2000, units = "px", pointsize = 50)
+tiff("heatmapValBiosynthMets.tiff", width = 3000, height = 1000, units = "px", pointsize = 50)
 heatmap.2(as.matrix(t(valMetMat[, c("C00183", "C02504", "C02631", "C06032", "C02226")])), distfun = function(x) dist(x, method = "euclidean"), 
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
           col = redgreen(75), breaks = 76, ColSideColors = Cols, notecol = NULL, trace = "none", xlab = "Strains", 
-          ylab = "Metabolites", main = "CCMN normalized", margins = c(10, 16), 
+          ylab = "Metabolites", margins = c(10, 16), 
+          cex.main = 20,
+          keysize = 0.7,
+          cexRow = 0.7,
+          cexCol = 1.2,
+          scale = "row",
+          #Colv = colThick,
+          #Rowv = rowThick,
+          #colCol = colCols,
+          cellnote = round(as.matrix(t(ccmnNormMets)), 2),
+          notecex = 0.7,
+          key.xtickfun=function() {
+            cex <- par("cex")*par("cex.axis")
+            side <- 1
+            line <- 0
+            col <- par("col.axis")
+            font <- par("font.axis")
+            mtext("low", side=side, at=0, adj=0,
+                  line=line, cex=cex, col=col, font=font)
+            mtext("high", side=side, at=1, adj=1,
+                  line=line, cex=cex, col=col, font=font)
+            return(list(labels=FALSE, tick=FALSE))
+          })
+
+dev.off()
+
+jpeg("heatmapValBiosynthMets.jpeg", width = 3000, height = 1000, units = "px", pointsize = 50)
+heatmap.2(as.matrix(t(valMetMat[, c("C00183", "C02504", "C02631", "C06032", "C02226")])), distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
+          col = redgreen(75), breaks = 76, ColSideColors = Cols, notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Metabolites", margins = c(10, 16), 
           cex.main = 20,
           keysize = 0.7,
           cexRow = 0.7,
