@@ -334,6 +334,15 @@ ccmnNormOPLSDAQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_goo
 )
 dev.off()
 
+jpeg(filename = "ccmnNormOPLSDAQuant.jpeg", res = 300, height = 3000, width = 3000, units = "px")
+ccmnNormOPLSDAQuant <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
+                            ccmn_norm_mets_good_old$swarmQuant, 
+                            predI = 1, 
+                            orthoI = NA#,
+                            #subset = as.vector(inTrain)
+)
+dev.off()
+
 tiff(filename = "ccmnNormOPLSDAQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
 ccmnNormOPLSDAQual <- opls(ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)],
                            ccmn_norm_mets_good_old$swarmData, 
@@ -380,6 +389,7 @@ ggplot(data = OPLSDAQuantLoadsRmAmbig,
   geom_bar(stat = "identity") +
   coord_flip()
 ggsave(filename = "OPLSDAQuantLoadsBarplot.tiff")
+ggsave(filename = "OPLSDAQuantLoadsBarplot.jpeg")
 # Obtain the 3variables with most extreme loading values (positive and negative) of each component
 extremValsOPLSDAQual <- getExtremVals(OPLSDAQualLoads, n = 14)
 extremValsOPLSDAQuant <- getExtremVals(OPLSDAQuantLoads, n = 14)
@@ -579,23 +589,29 @@ pathsRandPermPvalORAOPLSDA <- getRandEnrichment(randORAOPLSDA, ORAOPLSDAReal)
 library(gplots)
 
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/gene_enz_tab_filt.RData")
+load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/gene_tab_filt.RData")
 
 rownames(gene_enz_tab_filt) <- gsub("PA14.jbx", "PA14", rownames(gene_enz_tab_filt))
+rownames(gene_tab_filt) <- gsub("PA14.jbx", "PA14", rownames(gene_tab_filt))
+
 # Group strains with a Jaccard similarity of 0.95 or above
 geneEnzTabFiltGrouped <- jaccGroup(gene_enz_tab_filt, threshold = 0.05)$GroupedMat
-
 geneGroups <- jaccGroup(gene_enz_tab_filt)$Groups
-
 rownames(geneEnzTabFiltGrouped)[rownames(geneEnzTabFiltGrouped) == "W70322"] <- "W70332"
-
 geneEnzTabFiltGrouped <- geneEnzTabFiltGrouped[rownames(geneEnzTabFiltGrouped) %in% names(swarmBin), ]
 
-#swarmBin4Gene <- swarmBin[names(swarmBin) %in% rownames(geneEnzTabFiltGrouped)]
-
+geneTabFiltGrouped <- jaccGroup(gene_tab_filt, threshold = 0.05)$GroupedMat
+geneAllGroups <- jaccGroup(gene_tab_filt)$Groups
+rownames(geneTabFiltGrouped)[rownames(geneTabFiltGrouped) == "W70322"] <- "W70332"
+geneTabFiltGrouped <- geneTabFiltGrouped[rownames(geneTabFiltGrouped) %in% names(swarmBin), ]
 
 geneEnzTabFiltGrouped <- cbind.data.frame(as.data.frame(geneEnzTabFiltGrouped), 
                                           swarmBin[names(swarmBin) %in% rownames(geneEnzTabFiltGrouped)])
 colnames(geneEnzTabFiltGrouped)[ncol(geneEnzTabFiltGrouped)] <- "swarmData"
+
+geneTabFiltGrouped <- cbind.data.frame(as.data.frame(geneTabFiltGrouped), 
+                                       swarmBin[names(swarmBin) %in% rownames(geneTabFiltGrouped)])
+colnames(geneTabFiltGrouped)[ncol(geneTabFiltGrouped)] <- "swarmData"
 
 set.seed(108)
 inTrainEnz <- createDataPartition(
@@ -722,10 +738,16 @@ heatmap.2(t(as.matrix(geneEnzTabSign)), Rowv = T, Colv = F, distfun = function(x
           })
 dev.off()
 
-geneEnzTabFiltGrouped <- cbind.data.frame(geneEnzTabFiltGrouped, swarmMeansRearr[-1])
+
+
+geneEnzTabFiltGrouped <- cbind.data.frame(geneEnzTabFiltGrouped, swarmMeansRearr[match(rownames(geneEnzTabFiltGrouped), names(swarmMeansRearr))])
 colnames(geneEnzTabFiltGrouped)[ncol(geneEnzTabFiltGrouped)] <- "swarmQuant"
 
+geneTabFiltGrouped <- cbind.data.frame(geneTabFiltGrouped, swarmMeansRearr[match(rownames(geneTabFiltGrouped), names(swarmMeansRearr))])
+colnames(geneTabFiltGrouped)[ncol(geneTabFiltGrouped)] <- "swarmQuant"
+
 geneEnzTabPCA <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)])
+geneTabPCA <- opls(geneTabFiltGrouped[, 1:(ncol(geneTabFiltGrouped) - 2)])
 
 tiff(filename = "pcaEnzDataSwarmQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
 plot(geneEnzTabPCA,
@@ -739,6 +761,18 @@ plot(geneEnzTabPCA,
      parAsColFcVn = geneEnzTabFiltGrouped$swarmQuant)
 dev.off()
 
+tiff(filename = "pcaGenesSwarmQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
+plot(geneTabPCA,
+     typeVc = "x-score",
+     parAsColFcVn = geneTabFiltGrouped$swarmData)
+dev.off()
+
+tiff(filename = "pcaGenesSwarmQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+plot(geneTabPCA,
+     typeVc = "x-score",
+     parAsColFcVn = geneTabFiltGrouped$swarmQuant)
+dev.off()
+
 tiff(filename = "geneEnzTabOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
 geneEnzTabOPLSDAQuant <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)],
                               geneEnzTabFiltGrouped$swarmQuant, 
@@ -748,14 +782,45 @@ geneEnzTabOPLSDAQuant <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrou
 )
 dev.off()
 
-geneEnzTabOPLSDAQuantLoads <- cbind(getLoadingMN(geneEnzTabOPLSDAQuant)[, 1],
-                                    getLoadingMN(geneEnzTabOPLSDAQuant, orthoL = T))
+jpeg(filename = "geneEnzTabOPLSDAQuant.jpeg", res = 300, height = 3000, width = 3000, units = "px")
+geneEnzTabOPLSDAQuant <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)],
+                              geneEnzTabFiltGrouped$swarmQuant, 
+                              predI = 1, 
+                              orthoI = NA#,
+                              #subset = as.vector(inTrain)
+)
+dev.off()
+
+tiff(filename = "geneTabOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+geneTabOPLSDAQuant <- opls(geneTabFiltGrouped[, 1:(ncol(geneTabFiltGrouped) - 2)],
+                           geneTabFiltGrouped$swarmQuant, 
+                           predI = 1, 
+                           orthoI = NA#,
+                           #subset = as.vector(inTrain)
+)
+dev.off()
+
+geneEnzTabOPLSDAQuantLoads <- cbind(getLoadingMN(geneEnzTabOPLSDAQuant)[, 1]#,
+                                    #getLoadingMN(geneEnzTabOPLSDAQuant, orthoL = T)
+                                    )
 colnames(geneEnzTabOPLSDAQuantLoads)[1] <- "p1"
 
 geneEnzTabExtremLoads <- getExtremVals(geneEnzTabOPLSDAQuantLoads, n = 5)
 
+
+geneOPLSDALoads4Barplot <- cbind.data.frame(rownames(geneEnzTabOPLSDAQuantLoads), geneEnzTabOPLSDAQuantLoads[, 1])
+colnames(geneOPLSDALoads4Barplot) <- c("gene", "loading")
+
+ggplot(data = geneOPLSDALoads4Barplot,
+       aes(x = reorder(gene, loading), y = loading)) +
+  labs(x = "gene", y = "OPLS-DA Loading") +
+  geom_bar(stat = "identity") +
+  coord_flip()
+ggsave(filename = "enzOPLSDAQuantLoadsBarplot.tiff", width = 500, height = 1000, units = "mm")
+
+
 predGenesOPLSDA <- c()
-for(i in 1:10){
+for(i in seq_along(geneEnzTabExtremLoads$uniqueExtremeVars)){
   predGenesOPLSDA <- c(predGenesOPLSDA, names(which(geneGroups == 
                                                       geneGroups[which(names(geneGroups) == 
                                                                          geneEnzTabExtremLoads$uniqueExtremeVars[i])])))
@@ -771,7 +836,7 @@ geneEnzTabSignOPLSDA <- geneEnzTabSignOPLSDA[rownames(geneEnzTabSignOPLSDA) != "
 
 # Plot it
 
-tiff("geneEnzTabSignOPLSDA.tiff", width = 10000, height = 5000, units = "px", pointsize = 100)
+tiff("geneEnzTabSignOPLSDA.tiff", width = 10000, height = 20000, units = "px", pointsize = 100)
 heatmap.2(t(as.matrix(geneEnzTabSignOPLSDA)), Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
           density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
           col = c("blue", "red"), ColSideColors = cols[match(rownames(geneEnzTabSignOPLSDA), rownames(gene_enz_tab_filt))], notecol = NULL, trace = "none", xlab = "Strains", 
@@ -798,11 +863,213 @@ heatmap.2(t(as.matrix(geneEnzTabSignOPLSDA)), Rowv = T, Colv = F, distfun = func
           })
 dev.off()
 
+jpeg("geneEnzTabSignOPLSDA.jpeg", width = 2200, height = 3000, units = "px", pointsize = 100)
+heatmap.2(t(as.matrix(geneEnzTabSignOPLSDA)), Rowv = T, Colv = F, distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "row", 
+          col = c("blue", "red"), ColSideColors = cols[match(rownames(geneEnzTabSignOPLSDA), rownames(gene_enz_tab_filt))], notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Genes", main = "Presence/absence of genes related to swarming (OPLS-DA)", margins = c(5, 6), 
+          keysize = 0.5,
+          sepwidth = c(0.1, 0.05),
+          cexRow = 0.5,
+          cexCol = 0.5,
+          
+          #sepcolor = "black",
+          #colsep=1:ncol(t(gene_tab)),
+          #rowsep=1:nrow(t(gene_tab)),
+          key.xtickfun=function() {
+            cex <- par("cex")*par("cex.axis")
+            side <- 1
+            line <- 0
+            col <- par("col.axis")
+            font <- par("font.axis")
+            mtext("low", side=side, at=0, adj=0,
+                  line=line, cex=cex, col=col, font=font)
+            mtext("high", side=side, at=1, adj=1,
+                  line=line, cex=cex, col=col, font=font)
+            return(list(labels=FALSE, tick=FALSE))
+          })
+dev.off()
+
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/dictEnzymes.RData")
 
 # Let's see if any of these enzymatic genes appears in the fella subgraph
 
-OPLSDASignEnzsECnums <- dictEnzymes[dictEnzymes$Gene %in% colnames(geneEnzTabSignOPLSDA), ]$ECnums
+OPLSDASignEnzsECnums <- dictEnzymes$ECnums[match(colnames(geneEnzTabSignOPLSDA), dictEnzymes$Gene)]
 sum(tab_OPLSDAQuant$KEGG.id %in% OPLSDASignEnzsECnums)
+tab_OPLSDAQuant[which(tab_OPLSDAQuant$KEGG.id %in% OPLSDASignEnzsECnums), ]
 
-# No one appears. Fuck
+# EC 2.2.1.6 appears. The most relevant pathway where it appears, according to the compounds related with swarming, 
+# is Valine Biosynthesis
+dictEnzymes[which(dictEnzymes$ECnums == "2.2.1.6"), ]
+
+valBiosComps <- gsub("cpd:", replacement = "", keggLink(target = "compound", source = "map00290"))
+OPLSDAQuantResultTab[OPLSDAQuantResultTab[, 2] %in% valBiosComps, ]
+
+OPLSDASignEnzsAnnot <- dictEnzymes$Annotation[match(colnames(geneEnzTabSignOPLSDA), dictEnzymes$Gene)]
+
+signEnzymes <- cbind.data.frame(OPLSDASignEnzsAnnot, 
+                                colnames(geneEnzTabSignOPLSDA), 
+                                OPLSDASignEnzsECnums)
+
+colnames(signEnzymes) <- c("Annotation", "Gene", "EC_num")
+
+
+# Let's see if the genes that are in F34365 are contiguous in the genome
+sort(dictEnzymes$F34365[dictEnzymes$Gene %in% signEnzymes$Gene])
+
+# Do keggLink for each gene to see pathways were each gene appears. 
+# Can we do an ORA? 
+source("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/MSK_repo_new/diffMetAnal_functions.R")
+
+oraEnzs <- doORA(signEnzymes$EC_num, dictEnzymes$ECnums, org = "pae", alpha = 0.05, target = "enzyme")
+
+tyrMetComps <- gsub("cpd:", replacement = "", keggLink("map00350", target = "compound"))
+
+OPLSDAQuantResultTab[, 2][OPLSDAQuantResultTab[, 2] %in% tyrMetComps]
+
+signEnzymes$EC_num[signEnzymes$EC_num %in% gsub("ec:", replacement = "", keggLink("map00350", target = "enzyme"))]
+signEnzymes[signEnzymes$EC_num %in% gsub("ec:", replacement = "", keggLink("map00350", target = "enzyme")), ]
+
+# Formyl methionine is the metabolite that is most correlated with swarming. It only appears in Cysteine and methionine 
+# metabolism. Let's see if we have any gene in this pathway correlated with swarming.
+cysMethMet <- gsub("ec:", replacement = "", keggLink("enzyme", "map00270"))
+sum(signEnzymes$EC_num %in% cysMethMet)
+dictEnzymes$Gene[which(dictEnzymes$ECnums %in% cysMethMet)]
+signEnzymes[which(signEnzymes$EC_num %in% cysMethMet), ]
+# Now without doing the gene grouping 
+
+geneEnzTabFiltWSwarm <- cbind.data.frame(gene_enz_tab_filt, swarmMeansRearr[match(rownames(gene_enz_tab_filt), names(swarmMeansRearr))])
+colnames(geneEnzTabFiltWSwarm)[ncol(geneEnzTabFiltWSwarm)] <- "swarmQuant"
+geneEnzTabFiltWSwarm <- geneEnzTabFiltWSwarm[!is.na(geneEnzTabFiltWSwarm$swarmQuant), ]
+dim(geneEnzTabFiltWSwarm)
+
+tiff(filename = "geneEnzTabWOGroupOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+geneEnzTabWOGroupOPLSDAQuant <- opls(geneEnzTabFiltWSwarm[, 1:(ncol(geneEnzTabFiltWSwarm) - 1)],
+                                     geneEnzTabFiltWSwarm$swarmQuant, 
+                                     predI = 1, 
+                                     orthoI = NA
+)
+dev.off()
+
+geneEnzTabWOGroupOPLSDAQuantLoads <- getLoadingMN(geneEnzTabWOGroupOPLSDAQuant)
+
+
+geneEnzTabWOGroupExtremLoads <- getExtremVals(geneEnzTabWOGroupOPLSDAQuantLoads, n = 5)
+
+
+geneOPLSDALoads4BarplotWOGroup <- cbind.data.frame(rownames(geneEnzTabWOGroupOPLSDAQuantLoads), geneEnzTabWOGroupOPLSDAQuantLoads[, 1])
+colnames(geneOPLSDALoads4BarplotWOGroup) <- c("gene", "loading")
+
+ggplot(data = geneOPLSDALoads4BarplotWOGroup,
+       aes(x = reorder(gene, loading), y = loading)) +
+  labs(x = "gene", y = "OPLS-DA Loading") +
+  geom_bar(stat = "identity") +
+  coord_flip()
+ggsave(filename = "enzWOGroupOPLSDAQuantLoadsBarplot.tiff", width = 500, height = 1000, units = "mm")
+
+# Doesn't work, too many variables, turn the loadings very low. 
+
+# Do OPLS-DA mixing metabolomic and presence/absence data
+rownames(gene_enz_tab_filt)
+rownames(ccmn_norm_mets_good_old)
+mixedDat <- cbind.data.frame(ccmn_norm_mets_good_old, 
+                             gene_enz_tab_filt[match(gsub("\\_.*|(PA14).*", 
+                                                          rownames(ccmn_norm_mets_good_old), 
+                                                          rep = "\\1"), 
+                                                     rownames(gene_enz_tab_filt)), ])
+mixedDat <- mixedDat[!is.na(mixedDat[, ncol(mixedDat)]), ]
+mixedDat <- cbind.data.frame(mixedDat, swarmMeansRearr[match(gsub("\\_.*|(PA14).*", 
+                                                                  rep = "\\1",
+                                                                  rownames(mixedDat)), names(swarmMeansRearr))])
+
+colnames(mixedDat)[ncol(mixedDat)] <- "swarmQuant"
+
+mixedDat <- mixedDat[, -87]
+mixedDat <- mixedDat[, -87]
+
+mixedDatPCA  <- opls(mixedDat[, 1:(ncol(mixedDat) - 1)])
+swarmData <- mixedDat$swarmQuant
+tiff(filename = "pcamixedSwarmQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+plot(mixedDatPCA,
+     typeVc = "x-score",
+     parAsColFcVn = swarmData)
+dev.off()
+
+tiff(filename = "mixedOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
+mixedOPLSDAQuant <- opls(mixedDat[, 1:(ncol(mixedDat) - 1)],
+                         mixedDat$swarmQuant, 
+                         predI = 1, 
+                         orthoI = NA)
+dev.off()
+
+mixedLoadings <- getLoadingMN(mixedOPLSDAQuant)
+
+
+# Valine, Leucine and Isoleucine Biosynthesis seems to be affected. Gene ilvB3 (codes for Acetolactate isozyme, EC 2.2.1.6)
+# Is only in F34365, F22031 (swarmers) and T6313 (nonswarmer). Let's see if using only the metabolite abundances of
+# the compounds that appear in this pathway the strains cluser according to how much they swarm. 
+ccmn_norm_mets_good_old
+
+ValLeuIleBioCpds <- gsub("cpd:", replacement = "", keggLink("compound", "map00290"))
+
+metMat <- ccmn_norm_mets_good_old[, 1:(ncol(ccmn_norm_mets_good_old) - 2)]
+dictionary$`KEGG IDs`[match(colnames(metMat), make.names(dictionary$`Old Data Names`))]
+
+colnames(metMat) <- dictionary$`KEGG IDs`[match(colnames(metMat), make.names(dictionary$`Old Data Names`))]
+
+valMetMat <- metMat[, colnames(metMat) %in% ValLeuIleBioCpds]
+
+
+dictionary$Consensus[match(colnames(valMetMat), dictionary$`KEGG IDs`)]
+
+groups <- unique(gsub("_.*", replacement = "", rownames(valMetMat)))
+cols <- topo.colors(length(groups))
+cols[1] <- '#000000'
+cols[2] <- '#555555'
+
+Cols <- c(rep(NA, length(rownames(valMetMat))))
+for(ii in 1:nrow(valMetMat)) {
+        selected <- which(groups == gsub("\\_.*", "", rownames(valMetMat))[ii])
+        Cols[ii] <- cols[selected]
+}
+valMetMat <- getStrainMedian(valMetMat)
+Cols <- unique(Cols)
+tiff("heatmapValBiosynthMets.tiff", width = 6000, height = 2000, units = "px", pointsize = 50)
+heatmap.2(as.matrix(t(valMetMat[, c("C00183", "C02504", "C02631", "C06032", "C02226")])), distfun = function(x) dist(x, method = "euclidean"), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
+          col = redgreen(75), breaks = 76, ColSideColors = Cols, notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Metabolites", main = "CCMN normalized", margins = c(10, 16), 
+          cex.main = 20,
+          keysize = 0.7,
+          cexRow = 0.7,
+          cexCol = 1.2,
+          scale = "row",
+          #Colv = colThick,
+          #Rowv = rowThick,
+          #colCol = colCols,
+          cellnote = round(as.matrix(t(ccmnNormMets)), 2),
+          notecex = 0.7,
+          key.xtickfun=function() {
+            cex <- par("cex")*par("cex.axis")
+            side <- 1
+            line <- 0
+            col <- par("col.axis")
+            font <- par("font.axis")
+            mtext("low", side=side, at=0, adj=0,
+                  line=line, cex=cex, col=col, font=font)
+            mtext("high", side=side, at=1, adj=1,
+                  line=line, cex=cex, col=col, font=font)
+            return(list(labels=FALSE, tick=FALSE))
+          })
+
+dev.off()
+
+pcaValBiosynthMets <- prcomp(valMetMat)
+
+tiff("pcaSwarmMets.tiff", res = 300, height = 5000, width = 5000)
+fviz_pca_ind(pcaValBiosynthMets, 
+             col.ind = c(ccmn_norm_mets_good_old$swarmQuant[1],
+                         unique(ccmn_norm_mets_good_old$swarmQuant)),
+             gradient.cols = c("#003CFF", "#66FF00", "#FF0000"),
+             legend.title = "Log Swarming Area")
+dev.off()

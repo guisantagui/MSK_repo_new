@@ -29,3 +29,9 @@ matcor(ccmnNormMets, swarmDatMeans[, 2:ncol(swarmDatMeans)])
 cc1 <- cc(ccmnNormMets, swarmDatMeans[, 2:ncol(swarmDatMeans)])
 
 cc2 <- comput(ccmnNormMets, swarmDatMeans[, 2:ncol(swarmDatMeans)], cc1)
+
+cc1$cor
+cc1$xcoef
+cc1$ycoef
+
+cc2

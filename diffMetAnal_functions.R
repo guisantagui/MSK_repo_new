@@ -161,6 +161,53 @@ doORA <- function(diffMetObjkt, allMetsObjkt, org = NULL, alpha = 0.05){
         return(signMat)
 }
 
+doORA <- function(diffMetObjkt, allMetsObjkt, org = NULL, alpha = 0.05, target = "compound"){
+        if(!require(KEGGREST)) install.packages("KEGGREST")
+        library(KEGGREST)
+        if(target != "compound" && target != "enzyme"){
+                return("Target must be compound or enzyme")
+                stop(call. = F)
+        }
+        if(is.null(org)){
+                paths <- keggList("pathway")
+        }else{
+                paths <- keggList("pathway", org)
+        }
+        diffMet <- diffMetObjkt[!is.na(diffMetObjkt)]
+        if(target == "compound"){
+                diffMet <- sapply("cpd:", diffMet, FUN = paste, sep = "")[, 1]
+        }
+        if(target == "enzyme"){
+                diffMet <- sapply("ec:", diffMet, FUN = paste, sep = "")[, 1]
+        }
+        totPaths <- unique(unlist(sapply(allMetsObjkt, keggLink, target = "pathway")))
+        if(!is.null(org)){
+                totPaths <- totPaths[gsub("map", replacement = org, totPaths) %in% names(paths)]
+        }
+        compsPerPath <- sapply(totPaths, keggLink, target = target)
+        allComps <- unique(unlist(compsPerPath))
+        allCompsLen <- length(allComps)
+        contMat <- function(x) {
+                compsInPath <- length(x)
+                mat <- matrix(c(compsInPath, allCompsLen - compsInPath, sum(diffMet %in% x), sum(!diffMet %in% x)), 
+                              ncol = 2, 
+                              nrow = 2,
+                              dimnames = list(c("in_path", "not_in_path"),
+                                              c("met_not_interest", "met_in_interest")))
+                return(mat)
+        }
+        contMatsPaths <- lapply(compsPerPath, contMat)
+        fishRes <- lapply(contMatsPaths, fisher.test)
+        filt <- function(x) x$p.value <= alpha
+        vecTrue <- unlist(lapply(fishRes, filt))
+        sign <- fishRes[vecTrue]
+        pVals <- sapply(sign, function(f) f$p.value)
+        if(!is.null(org)){names(pVals) <- gsub("map", replacement = org, names(pVals))}
+        signMat <- cbind.data.frame(paths[match(names(pVals), names(paths))], pVals)
+        colnames(signMat) <- c("Pathways", "p.values")
+        return(signMat)
+}
+
 # Gets the median of the replicates of the metabolomic matrix.
 getStrainMedian <- function(normMets){
         normMetsMedians <- matrix(nrow = nrow(normMets)/3, ncol = ncol(normMets))
