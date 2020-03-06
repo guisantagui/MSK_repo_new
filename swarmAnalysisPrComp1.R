@@ -761,6 +761,12 @@ plot(geneEnzTabPCA,
      parAsColFcVn = geneEnzTabFiltGrouped$swarmQuant)
 dev.off()
 
+jpeg(filename = "pcaEnzDataSwarmQuant.jpeg", res = 300, height = 3000, width = 3000, units = "px")
+plot(geneEnzTabPCA,
+     typeVc = "x-score",
+     parAsColFcVn = geneEnzTabFiltGrouped$swarmQuant)
+dev.off()
+
 tiff(filename = "pcaGenesSwarmQual.tiff", res = 300, height = 3000, width = 3000, units = "px")
 plot(geneTabPCA,
      typeVc = "x-score",
@@ -892,9 +898,92 @@ dev.off()
 
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/genePresAbs/dictEnzymes.RData")
 
-# Let's see if any of these enzymatic genes appears in the fella subgraph
+# Build a version of previous heatmap with pathway information
+if(!require(devtools)) install.packages("devtools")
+library(devtools)
+
+if(!require(ComplexHeatmap)) install_github("jokergoo/ComplexHeatmap")
+library(ComplexHeatmap)
 
 OPLSDASignEnzsECnums <- dictEnzymes$ECnums[match(colnames(geneEnzTabSignOPLSDA), dictEnzymes$Gene)]
+pathsSignEnzs <- sapply(OPLSDASignEnzsECnums, keggLink, target = "pathway")
+allPathsSignEnzs <- gsub("map", replacement = "pau", unique(unlist(pathsSignEnzs)))[gsub("map", 
+                                                                                         replacement = "pau", 
+                                                                                         unique(unlist(pathsSignEnzs))) %in% keggLink(target = "pathway", 
+                                                                                                                                      source = "pau")]
+annotMat_pathsSignEnzs <- matrix(data = rep("0", length(pathsSignEnzs)*length(allPathsSignEnzs)),
+                                 ncol = length(allPathsSignEnzs), 
+                                 nrow = length(pathsSignEnzs), 
+                                 dimnames = list(paste("ec:", OPLSDASignEnzsECnums, sep = ""),
+                                                 allPathsSignEnzs))
+for(i in seq_along(pathsSignEnzs)){
+        idx <- match(gsub("path:pau", 
+                          replacement = "", 
+                          allPathsSignEnzs), 
+                     gsub("path:map|path:ec", 
+                          replacement = "",
+                          pathsSignEnzs[[i]]))
+        idx <- idx[!is.na(idx)]
+        annotMat_pathsSignEnzs[i, idx] <- "1"
+}
+as.character(annotMat_pathsSignEnzs)
+colnames(annotMat_pathsSignEnzs)
+annot <- rowAnnotation(pau00061 = annotMat_pathsSignEnzs[, 1],
+                       pau00780 = annotMat_pathsSignEnzs[, 2],
+                       pau01100 = annotMat_pathsSignEnzs[, 3],
+                       pau00230 = annotMat_pathsSignEnzs[, 4],
+                       pau00350 = annotMat_pathsSignEnzs[, 5],
+                       pau00360 = annotMat_pathsSignEnzs[, 6],
+                       pau01120 = annotMat_pathsSignEnzs[, 7],
+                       pau00750 = annotMat_pathsSignEnzs[, 8],
+                       pau00260 = annotMat_pathsSignEnzs[, 9],
+                       pau00362 = annotMat_pathsSignEnzs[, 10],
+                       pau00460 = annotMat_pathsSignEnzs[, 11],
+                       pau00500 = annotMat_pathsSignEnzs[, 12],
+                       pau01110 = annotMat_pathsSignEnzs[, 13],
+                       pau00330 = annotMat_pathsSignEnzs[, 14],
+                       pau00261 = annotMat_pathsSignEnzs[, 15],
+                       pau00300 = annotMat_pathsSignEnzs[, 16],
+                       pau01130 = annotMat_pathsSignEnzs[, 17],
+                       pau00640 = annotMat_pathsSignEnzs[, 18],
+                       pau00920 = annotMat_pathsSignEnzs[, 19],
+                       pau00052 = annotMat_pathsSignEnzs[, 20],
+                       pau00520 = annotMat_pathsSignEnzs[, 21],
+                       pau00790 = annotMat_pathsSignEnzs[, 22],
+                       pau00030 = annotMat_pathsSignEnzs[, 23],
+                       pau00970 = annotMat_pathsSignEnzs[, 24],
+                       pau00630 = annotMat_pathsSignEnzs[, 25],
+                       pau00071 = annotMat_pathsSignEnzs[, 26],
+                       pau00930 = annotMat_pathsSignEnzs[, 27],
+                       col = list(pau00061 = c("1" = "red", "0" = "blue"),
+                                  pau00780 = c("1" = "red", "0" = "blue"),
+                                  pau01100 = c("1" = "red", "0" = "blue"),
+                                  pau00230 = c("1" = "red", "0" = "blue"),
+                                  pau00350 = c("1" = "red", "0" = "blue"),
+                                  pau00360 = c("1" = "red", "0" = "blue"),
+                                  pau01120 = c("1" = "red", "0" = "blue"),
+                                  pau00750 = c("1" = "red", "0" = "blue"),
+                                  pau00260 = c("1" = "red", "0" = "blue"),
+                                  pau00362 = c("1" = "red", "0" = "blue"),
+                                  pau00460 = c("1" = "red", "0" = "blue"),
+                                  pau00500 = c("1" = "red", "0" = "blue"),
+                                  pau01110 = c("1" = "red", "0" = "blue"),
+                                  pau00330 = c("1" = "red", "0" = "blue"),
+                                  pau00261 = c("1" = "red", "0" = "blue"),
+                                  pau00300 = c("1" = "red", "0" = "blue"),
+                                  pau01130 = c("1" = "red", "0" = "blue"),
+                                  pau00640 = c("1" = "red", "0" = "blue"),
+                                  pau00920 = c("1" = "red", "0" = "blue"),
+                                  pau00052 = c("1" = "red", "0" = "blue"),
+                                  pau00520 = c("1" = "red", "0" = "blue"),
+                                  pau00790 = c("1" = "red", "0" = "blue"),
+                                  pau00030 = c("1" = "red", "0" = "blue"),
+                                  pau00970 = c("1" = "red", "0" = "blue"),
+                                  pau00630 = c("1" = "red", "0" = "blue"),
+                                  pau00071 = c("1" = "red", "0" = "blue"),
+                                  pau00930 = c("1" = "red", "0" = "blue")))
+# Let's see if any of these enzymatic genes appears in the fella subgraph
+
 sum(tab_OPLSDAQuant$KEGG.id %in% OPLSDASignEnzsECnums)
 tab_OPLSDAQuant[which(tab_OPLSDAQuant$KEGG.id %in% OPLSDASignEnzsECnums), ]
 
@@ -1073,11 +1162,11 @@ heatmap.2(as.matrix(t(valMetMat[, c("C00183", "C02504", "C02631", "C06032", "C02
           keysize = 0.7,
           cexRow = 0.7,
           cexCol = 1.2,
-          scale = "row",
+          scale = "none",
           #Colv = colThick,
           #Rowv = rowThick,
           #colCol = colCols,
-          cellnote = round(as.matrix(t(ccmnNormMets)), 2),
+          cellnote = round(as.matrix(t(valMetMat[, c("C00183", "C02504", "C02631", "C06032", "C02226")])), 2),
           notecex = 0.7,
           key.xtickfun=function() {
             cex <- par("cex")*par("cex.axis")
@@ -1103,3 +1192,4 @@ fviz_pca_ind(pcaValBiosynthMets,
              gradient.cols = c("#003CFF", "#66FF00", "#FF0000"),
              legend.title = "Log Swarming Area")
 dev.off()
+
