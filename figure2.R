@@ -7,6 +7,7 @@ load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/normMetAnal/oldDataGood/c
 load("/Users/santamag/Desktop/GUILLEM/wrkng_dirs_clean/dictionary/dictionary.RData")
 dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)]
 
+
 ccmnNormMets <- ccmn_norm_mets_good_old
 colnames(ccmnNormMets) <- dictionary$Consensus[match(colnames(ccmn_norm_mets_good_old), dictionary$`Old Data Names`)]
 ccmnNormMets <- ccmnNormMets[, !is.na(colnames(ccmnNormMets))]
@@ -303,4 +304,65 @@ tiff("pcaBatchMets.tiff", res = 300, height = 3000, width = 3000)
 fviz_pca_ind(pcaMets,
              col.ind = batches,
              legend.title = "Batches")
+dev.off()
+
+rquery.cormat(ccmnNormMets)$r
+dist(t(ccmnNormMets))
+
+heatMapNoRowNorm <- heatmap.2(as.matrix(t(ccmnNormMets)), Rowv = T, distfun = function(x) as.dist(cor(t(x))), 
+                              density.info = "none", hclust = function(x) hclust(x, method = "complete"), dendrogram = "both", 
+                              col = redgreen(75), breaks = 76, ColSideColors = Cols, notecol = NULL, trace = "none", xlab = "Strains", 
+                              ylab = "Metabolites", main = "CCMN normalized", margins = c(10, 16), 
+                              cex.main = 20,
+                              keysize = 0.7,
+                              cexRow = 0.7,
+                              cexCol = 1.2,
+                              scale = "row",
+                              #colCol = colCols,
+                              cellnote = round(as.matrix(t(ccmnNormMets)), 2),
+                              notecex = 0.7,
+                              key.xtickfun=function() {
+                                      cex <- par("cex")*par("cex.axis")
+                                      side <- 1
+                                      line <- 0
+                                      col <- par("col.axis")
+                                      font <- par("font.axis")
+                                      mtext("low", side=side, at=0, adj=0,
+                                            line=line, cex=cex, col=col, font=font)
+                                      mtext("high", side=side, at=1, adj=1,
+                                            line=line, cex=cex, col=col, font=font)
+                                      return(list(labels=FALSE, tick=FALSE))
+                              })
+
+colThick <- set(heatMapNoRowNorm$colDendrogram, "branches_lwd", 5)
+rowThick <- set(heatMapNoRowNorm$rowDendrogram, "branches_lwd", 5)
+
+tiff("heatmapCCMN.tiff", width = 10000, height = 6000, units = "px", pointsize = 50)
+heatmap.2(as.matrix(t(ccmnNormMets)), distfun = function(x) as.dist(cor(t(x))), 
+          density.info = "none", hclust = function(x) hclust(x, method = "ward.D"), dendrogram = "both", 
+          col = redgreen(75), breaks = 76, ColSideColors = Cols, notecol = NULL, trace = "none", xlab = "Strains", 
+          ylab = "Metabolites", main = "CCMN normalized", margins = c(10, 16), 
+          cex.main = 20,
+          keysize = 0.7,
+          cexRow = 0.7,
+          cexCol = 1.2,
+          scale = "row",
+          Colv = colThick,
+          Rowv = rowThick,
+          #colCol = colCols,
+          cellnote = round(as.matrix(t(ccmnNormMets)), 2),
+          notecex = 0.7,
+          key.xtickfun=function() {
+                  cex <- par("cex")*par("cex.axis")
+                  side <- 1
+                  line <- 0
+                  col <- par("col.axis")
+                  font <- par("font.axis")
+                  mtext("low", side=side, at=0, adj=0,
+                        line=line, cex=cex, col=col, font=font)
+                  mtext("high", side=side, at=1, adj=1,
+                        line=line, cex=cex, col=col, font=font)
+                  return(list(labels=FALSE, tick=FALSE))
+          })
+
 dev.off()

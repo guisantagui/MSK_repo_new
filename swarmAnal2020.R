@@ -213,7 +213,7 @@ ggscatter(metSwarm, x = "logAreaPct", y = "Formyl.methionine", add = "reg.line")
                      label.x = 10)) +
         stat_regline_equation(label.x = 3, label.y = 13)
 
-ggscatter(metSwarm, x = "logAreaPct", y = "succinate", add = "reg.line") +
+ggscatter(metSwarm, x = "logAreaPct", y = "succinate", add = "reg.line", label = rownames(metSwarm)) +
         stat_cor(aes(label = paste(..rr.label.., ..p.label.., sep = "~`,`~"), 
                      label.x = 9)) +
         stat_regline_equation(label.x = 3, label.y = 10)

@@ -779,6 +779,7 @@ plot(geneTabPCA,
      parAsColFcVn = geneTabFiltGrouped$swarmQuant)
 dev.off()
 
+#geneEnzTabFiltGrouped <- geneEnzTabFiltGrouped[-3, ]
 tiff(filename = "geneEnzTabOPLSDAQuant.tiff", res = 300, height = 3000, width = 3000, units = "px")
 geneEnzTabOPLSDAQuant <- opls(geneEnzTabFiltGrouped[, 1:(ncol(geneEnzTabFiltGrouped) - 2)],
                               geneEnzTabFiltGrouped$swarmQuant, 
