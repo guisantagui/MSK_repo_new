@@ -8,7 +8,6 @@ load("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/dictionary/dictiona
 load("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/swarmAnalysis/pcomp1AreaPercCircularity.RData")
 
 
-
 rownames(ccmnNormMets)[grep(pattern = "W70322", x = rownames(ccmnNormMets))] <- paste("W70332", 
                                                                                       gsub(pattern = ".*_", 
                                                                                            replacement = "", 
@@ -308,6 +307,18 @@ metNames[17] <- "AICAR"
 colnames(ccmnNormMetsNoAmbigQuant)[!is.na(metNames)] <- metNames[!is.na(metNames)]
 colnames(ccmnNormMetsNoAmbig)[!is.na(metNames)] <- metNames[!is.na(metNames)]
 
+# Change names to the ones Kyu Rhee said
+KR_metNames <- readxl::read_xlsx("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/KRNewMetNames/metabolitesName-Xavier lab-KR.xlsx")
+
+KR_metNames <- as.data.frame(KR_metNames)
+
+colnames(ccmnNormMetsNoAmbig) <- KR_metNames$newName[match(colnames(ccmnNormMetsNoAmbig), KR_metNames$oldName)]
+colnames(ccmnNormMetsNoAmbigQuant) <- KR_metNames$newName[match(colnames(ccmnNormMetsNoAmbigQuant), KR_metNames$oldName)]
+
+
+# Export curated dataset
+write.csv(ccmnNormMetsNoAmbig, "metsCCMNNormCurated.csv")
+
 #colOrder <- order.dendrogram(heatMapNoRowNorm$colDendrogram)
 #ccmnNormMetsNoAmbigQuant <- ccmnNormMetsNoAmbigQuant[colOrder, ]
 
@@ -473,14 +484,6 @@ heatmap.2(as.matrix(t(ccmnNormMetsNoAmbigQuant)), distfun = function(x) dist(x, 
 )
 
 dev.off()
-
-
-# Change names to the ones Kyu Rhee said
-KR_metNames <- readxl::read_xlsx("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/KRNewMetNames/metabolitesName-Xavier lab-KR.xlsx")
-
-KR_metNames <- as.data.frame(KR_metNames)
-
-colnames(ccmnNormMetsNoAmbigQuant) <- KR_metNames$newName[match(colnames(ccmnNormMetsNoAmbigQuant), KR_metNames$oldName)]
 
 
 pdf("heatmapCCMN_quantScaleAlter.pdf", width = 13, height = 11, pointsize = 2.5)

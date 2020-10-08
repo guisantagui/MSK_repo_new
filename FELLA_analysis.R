@@ -30,9 +30,15 @@ load("../diffMetAnal/newData/diffMets_newData.RData")
 load("../diffMetAnal/hybrid/diffMets_hybrid.RData")
 
 graph <- buildGraphFromKEGGREST(
-        organism = "pae",
+        organism = "pau",
         filter.path = c("01100", "01200", "01210", "01212", "01230")
 )
+
+UCBPP_PA14_graph <- graph
+
+UCBPP_PA14_graph_DF <- as_data_frame(UCBPP_PA14_graph, "both")
+
+save(UCBPP_PA14_graph, file = "UCBPP_PA14_graph.RData")
 
 buildDataFromGraph(
         #keggdata.graph = graph,
