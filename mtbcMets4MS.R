@@ -4,8 +4,8 @@
 ########################################################################################
 if(!require(data.table)) install.packages("data.table")
 library(data.table)
-if(!require(RMassBank)) BiocManager::install("RMassBank")
-library(RMassBank)
+#if(!require(RMassBank)) BiocManager::install("RMassBank")
+#library(RMassBank)
 if(!require(R.cache)) install.packages("R.cache")
 library(R.cache)
 if(!require(KEGGREST)) install.packages("KEGGREST")
@@ -16,7 +16,6 @@ setwd("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/mtbcCPDs4MS")
 # Import model dataframes
 
 sMtb_mets <- as.data.frame(readxl::read_xlsx("C:/Users/Guillem/Documents/PhD/comput/models/MTBC/sMtb.xlsx", sheet = 2))
-sMtb_mets
 
 m2155_mets <- read.csv("m2155_mets.csv")
 
@@ -24,6 +23,15 @@ mtbH37Rv_mets <- read.csv("mtbH37Rv_mets.csv")
 
 iJO1366_mets <- as.data.frame(readxl::read_xls("C:/Users/Guillem/Documents/PhD/comput/models/Ecoli/iJO1366_info.xls", sheet = 4))
 
+# Remove duplicated compounds 
+
+mtbH37Rv_mets <- mtbH37Rv_mets[match(unique(mtbH37Rv_mets$seedID), mtbH37Rv_mets$seedID), 2:ncol(mtbH37Rv_mets)]
+
+m2155_mets <- m2155_mets[match(unique(m2155_mets$name), m2155_mets$name), 3:ncol(m2155_mets)]
+
+sMtb_mets <- sMtb_mets[match(unique(sMtb_mets$Name), sMtb_mets$Name), 2:ncol(sMtb_mets)]
+
+iJO1366_mets <- iJO1366_mets[match(unique(iJO1366_mets$`Metabolite Name`), iJO1366_mets$`Metabolite Name`), 2:ncol(iJO1366_mets)]
 # Import modelSEED compound dataframe
 
 modelSEED <- as.data.frame(fread('C:/Users/Guillem/Documents/PhD/comput/data/ModelSEEDDatabase-master/Biochemistry/compounds.tsv'))
@@ -84,15 +92,22 @@ SEEDids2Mass <- function(SEEDID){
 
 KEGGid2MolWeightNExactMass <- function(KEGGID){
         if(!is.na(KEGGID)){
-                get <- keggGet(KEGGID)
-                molWeight <- as.numeric(get[[1]]$MOL_WEIGHT)
-                exactMass <- as.numeric(get[[1]]$EXACT_MASS)
+                get <- tryCatch(keggGet(KEGGID), error = function(e) return("none"))
+                if(get == "none"){
+                        molWeight <- NA
+                        exactMass <- NA
+                }else{
+                        molWeight <- as.numeric(get[[1]]$MOL_WEIGHT)
+                        exactMass <- as.numeric(get[[1]]$EXACT_MASS)
+                }
         }else{
                 molWeight = NA
                 exactMass = NA
         }
         out <- list(molWeight = molWeight, 
                     exactMass = exactMass)
+        out$kegg <- KEGGID
+        print(out)
         return(out)
 }
 
@@ -109,13 +124,8 @@ iJO1366_mets$exactMass <- iJO1366_mets_exMassMW[, 2]
 iJO1366_mets$molWeight <- iJO1366_mets_exMassMW[, 1]
 
 
-
-
-
-
-
-
-
+m2155_mets$seedMass <- sapply(m2155_mets$seedID, SEEDids2Mass)
+m2155_mets_exactMass <- t(sapply(m2155_mets$keggID, KEGGid2MolWeightNExactMass))
 
 
 
