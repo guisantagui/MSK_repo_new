@@ -113,23 +113,31 @@ KEGGid2MolWeightNExactMass <- function(KEGGID){
 sMtb_mets$SEEDid <- sapply(sMtb_mets$`KeGG ID`, KEGGids2SEEDids)
 sMtb_mets$seedMass <- sapply(sMtb_mets$SEEDid, SEEDids2Mass)
 sMtb_mets_exMassMW <- t(sapply(sMtb_mets$`KeGG ID`, KEGGid2MolWeightNExactMass))
+sMtb_mets_exMassMW <- apply(sMtb_mets_exMassMW, 2, as.numeric)
 sMtb_mets$mIsotMass_KEGG <- sMtb_mets_exMassMW[, 2]
 sMtb_mets$molWeight <- sMtb_mets_exMassMW[, 1]
 
 iJO1366_mets$SEEDid <- sapply(iJO1366_mets$`KEGG ID`, KEGGids2SEEDids)
 iJO1366_mets$seedMass <- sapply(iJO1366_mets$SEEDid, SEEDids2Mass)
 iJO1366_mets_exMassMW <- t(sapply(iJO1366_mets$`KEGG ID`, KEGGid2MolWeightNExactMass))
+iJO1366_mets_exMassMW <- apply(iJO1366_mets_exMassMW, 2, as.numeric)
 iJO1366_mets$mIsotMass_KEGG <- iJO1366_mets_exMassMW[, 2]
 iJO1366_mets$molWeight <- iJO1366_mets_exMassMW[, 1]
 
 
 m2155_mets$seedMass <- sapply(m2155_mets$seedID, SEEDids2Mass)
 m2155_mets_exactMass <- t(sapply(m2155_mets$keggID, KEGGid2MolWeightNExactMass))
+m2155_mets_exactMass <- apply(m2155_mets_exactMass, 2, as.numeric)
 m2155_mets$mIsotMass_KEGG <- m2155_mets_exactMass[, 2]
 m2155_mets$molWeight <- m2155_mets_exactMass[, 1]
 
+
+# few compounds have a couple of kegg ids. Keep just the first, as it's the good one
+mtbH37Rv_mets$KEGGID <- sapply(mtbH37Rv_mets$KEGGID, function(x) strsplit(as.character(x), split = "; ")[[1]][1])
+
 mtbH37Rv_mets_exactMass <- t(sapply(mtbH37Rv_mets$KEGGID, KEGGid2MolWeightNExactMass))
-mtbH37Rv_mets$mIstMass_KEGG <- mtbH37Rv_mets_exactMass[, 2]
+mtbH37Rv_mets_exactMass <- apply(mtbH37Rv_mets_exactMass, 2, as.numeric)
+mtbH37Rv_mets$mIsotMass_KEGG <- mtbH37Rv_mets_exactMass[, 2]
 mtbH37Rv_mets$molWeigh <- mtbH37Rv_mets_exactMass[, 1]
 
 ############################################################################################################################
@@ -453,8 +461,8 @@ load("mtbH37Rv_mets.RData")
 load("m2155_mets.RData")
 
 
-
-View(iJO1366_mets[!is.na(iJO1366_mets$mIsotMass_KEGG), ][round(iJO1366_mets$mIsotMass_KEGG[!is.na(iJO1366_mets$mIsotMass_KEGG)], digits = 4) != round(iJO1366_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(iJO1366_mets$mIsotMass_KEGG)], ])
+iJO1366_mets_massDisc <- iJO1366_mets[!is.na(iJO1366_mets$mIsotMass_KEGG), ][round(iJO1366_mets$mIsotMass_KEGG[!is.na(iJO1366_mets$mIsotMass_KEGG)], digits = 4) != round(iJO1366_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(iJO1366_mets$mIsotMass_KEGG)], ]
+View(iJO1366_mets_massDisc)
 
 # Remove unnecessary columns
 iJO1366_mets <- iJO1366_mets[-which(colnames(iJO1366_mets) %in% c("seedMass", "Alternate Names", "Compartment"))]
@@ -468,27 +476,44 @@ print(paste("Proportion of compounds with unique mass in iJO1366:",
 ### m2155 metabolites                                                                                                      # 
 ############################################################################################################################
 
+# Turn names into character vector 
+m2155_mets$name <- as.character(m2155_mets$name)
+# Remove metabolites with no name 
+m2155_mets <- m2155_mets[-which(m2155_mets$name == ""), ]
+
+# Remove this compound as it's nothing
+m2155_mets <- m2155_mets[-which(m2155_mets$name == "C15815"), ]
+
 m2155_mets$formula <- as.character(m2155_mets$formula)
 m2155_mets$formula[m2155_mets$formula %in% c("", ".")] <- NA
 
-m2155_mets <- m2155_mets[-grep("R|X", m2155_mets$formula), ]
+m2155_mets <- m2155_mets[-grep("n|R|X", m2155_mets$formula), ]
 
-m2155_mets <- m2155_mets[!is.na(m2155_mets$formula), ]
+# m2155_mets <- m2155_mets[!is.na(m2155_mets$formula), ]
 
-m2155_mets <- m2155_mets[m2155_mets$mIsotMass_KEGG != "numeric(0)", ]
+# m2155_mets <- m2155_mets[m2155_mets$mIsotMass_KEGG != "numeric(0)", ]
 
 
 m2155_mets$mIsotMass_fromNeutFormula <- sapply(m2155_mets$formula, 
-                                               function(x) check_chemform(isotopes = isotopes, 
-                                                                          chemforms = x)$monoisotopic_mass)
+                                               function(x) if(!is.na(x)) check_chemform(isotopes = isotopes, 
+                                                                                        chemforms = x)$monoisotopic_mass else x <- NA)
 
-m2155_mets$formula_KEGG <- sapply(m2155_mets$keggID, function(x) keggGet(x)[[1]]$FORMULA)
+# get formulas from KEGG
+m2155_mets$formula_KEGG <- sapply(m2155_mets$keggID, function(x) if(!is.na(x)) keggGet(x)[[1]]$FORMULA else x <- NA)
+m2155_mets$formula_KEGG <- unlist(lapply(m2155_mets$formula_KEGG, function(x) if(is.null(x)) x <- NA else x <- x))
+
+# Remove formulas with ambiguous masses
+m2155_mets <- m2155_mets[-grep("n|R|X", m2155_mets$formula_KEGG), ]
+
+# remove compounds that don't have formula from KEGG and from seed
+m2155_mets <- m2155_mets[!is.na(m2155_mets$formula) & !is.na(m2155_mets$formula_KEGG), ]
 
 m2155_mets$mIsotMass_fromKEGGFormula <- sapply(m2155_mets$formula_KEGG, 
                                                function(x) check_chemform(isotopes = isotopes, 
                                                                           chemforms = x)$monoisotopic_mass)
 
-m2155_mets_massDisc <- m2155_mets[!is.na(m2155_mets$mIsotMass_KEGG), ][round(unlist(m2155_mets$mIsotMass_KEGG[!is.na(m2155_mets$mIsotMass_KEGG)]), digits = 4) != round(m2155_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(m2155_mets$mIsotMass_KEGG)], ]
+m2155_mets_massDisc <- m2155_mets[!is.na(m2155_mets$mIsotMass_fromKEGGFormula), ][round(unlist(m2155_mets$mIsotMass_fromKEGGFormula[!is.na(m2155_mets$mIsotMass_fromKEGGFormula)]), 
+                                                                                        digits = 4) != round(m2155_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(m2155_mets$mIsotMass_fromKEGGFormula)], ]
 # A lot of discrepancies---> seems that formulas here are all ions ?¿?¿?¿
 
 
@@ -505,18 +530,30 @@ print(paste("Proportion of compounds with unique mass in m2155:",
 
 View(mtbH37Rv_mets)
 
-mtbH37Rv_mets$KEGGID <- sapply(mtbH37Rv_mets$KEGGID, function(x) strsplit(as.character(x), split = "; ")[[1]][1])
-
 # remove compounds that have in formula stuff that are not chemical elements
 mtbH37Rv_mets <- mtbH37Rv_mets[-grep("R|X", mtbH37Rv_mets$formula), ]
-# few compounds have a couple of kegg ids. Keep just the first, as it's the good
-strsplit(as.character(mtbH37Rv_mets$KEGGID), split = "; ")[[1]][1]
 
+# Convert formula to factor and remove compounds without a formula 
 mtbH37Rv_mets$formula <- as.character(mtbH37Rv_mets$formula)
 mtbH37Rv_mets <- mtbH37Rv_mets[!mtbH37Rv_mets$formula %in% c("", "."), ]
 
-mtbH37Rv_mets$mIstMass_fromKEGGFormula <- sapply(mtbH37Rv_mets$formula, 
-                                                 function(x) check_chemform(isotopes = isotopes, 
-                                                                            chemforms = x)$monoisotopic_mass)
+# Get monoisotopic mass from seed formula
+mtbH37Rv_mets$mIsotMass_fromFormula <- sapply(mtbH37Rv_mets$formula, 
+                                             function(x) check_chemform(isotopes = isotopes, 
+                                                                        chemforms = x)$monoisotopic_mass)
 
-m2155_mets_massDisc <- m2155_mets[!is.na(m2155_mets$mIsotMass_KEGG), ][round(unlist(m2155_mets$mIsotMass_KEGG[!is.na(m2155_mets$mIsotMass_KEGG)]), digits = 4) != round(m2155_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(m2155_mets$mIsotMass_KEGG)], ]
+# get formulas from KEGG
+mtbH37Rv_mets$formula_KEGG <- sapply(mtbH37Rv_mets$KEGGID, function(x) if(!is.na(x)) keggGet(x)[[1]]$FORMULA else x <- NA)
+
+# get monoisotopic mass from kegg formulas
+mtbH37Rv_mets$mIsotMass_fromKEGGFormula <- sapply(mtbH37Rv_mets$formula_KEGG, 
+                                                 function(x) if(!is.na(x))check_chemform(isotopes = isotopes, 
+                                                                                         chemforms = x)$monoisotopic_mass else x <- NA)
+
+mtbH37Rv_mets_massDisc <- mtbH37Rv_mets[!is.na(mtbH37Rv_mets$mIsotMass_fromKEGGFormula), ][round(mtbH37Rv_mets$mIsotMass_fromKEGGFormula[!is.na(mtbH37Rv_mets$mIsotMass_fromKEGGFormula)], 
+                                                                                                 digits = 4) != round(mtbH37Rv_mets$mIsotMass_fromFormula, digits = 4)[!is.na(mtbH37Rv_mets$mIsotMass_fromKEGGFormula)], ]
+
+save(sMtb_mets, file = "sMtb_mets.RData")
+save(m2155_mets, file = "m2155_mets.RData")
+save(mtbH37Rv_mets, file = "mtbH37Rv_mets.RData")
+save(iJO1366_mets, file = "iJO1366_mets.RData")
