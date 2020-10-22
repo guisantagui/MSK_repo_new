@@ -1,42 +1,39 @@
+############################################################################################################################
+############################################################################################################################
+### Create a list of metabolites that we want to see in MTBC strains' LC-MS analysis #######################################
+############################################################################################################################
+############################################################################################################################
 
-########################################################################################
-### Create a list of metabolites that we want to see in MTBC strains' LC-MS analysis ###
-########################################################################################
 if(!require(data.table)) install.packages("data.table")
 library(data.table)
 if(!require(R.cache)) install.packages("R.cache")
 library(R.cache)
 if(!require(KEGGREST)) install.packages("KEGGREST")
 library(KEGGREST)
+if(!require(enviPat)) install.packages("enviPat")
+library(enviPat)
 if(!require(Rdisop)) BiocManager::install("Rdisop")
 library(Rdisop)
 
 setwd("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/mtbcCPDs4MS")
 
-# Import model dataframes
-
+# Import model dataframes and other data
+data("isotopes")
 sMtb_mets <- as.data.frame(readxl::read_xlsx("C:/Users/Guillem/Documents/PhD/comput/models/MTBC/sMtb.xlsx", sheet = 2))
-
 m2155_mets <- read.csv("m2155_mets.csv")
-
 mtbH37Rv_mets <- read.csv("mtbH37Rv_mets.csv")
-
 iJO1366_mets <- as.data.frame(readxl::read_xls("C:/Users/Guillem/Documents/PhD/comput/models/Ecoli/iJO1366_info.xls", sheet = 4))
 
 # Remove duplicated compounds 
-
 mtbH37Rv_mets <- mtbH37Rv_mets[match(unique(mtbH37Rv_mets$seedID), mtbH37Rv_mets$seedID), 2:ncol(mtbH37Rv_mets)]
-
 m2155_mets <- m2155_mets[match(unique(m2155_mets$name), m2155_mets$name), 3:ncol(m2155_mets)]
-
 sMtb_mets <- sMtb_mets[match(unique(sMtb_mets$Name), sMtb_mets$Name), 2:ncol(sMtb_mets)]
-
 iJO1366_mets <- iJO1366_mets[match(unique(iJO1366_mets$`Metabolite Name`), iJO1366_mets$`Metabolite Name`), 2:ncol(iJO1366_mets)]
 
 # Import modelSEED compound dataframe
 modelSEED <- as.data.frame(fread('C:/Users/Guillem/Documents/PhD/comput/data/ModelSEEDDatabase-master/Biochemistry/compounds.tsv'))
 
-# From the long string of aliases get KEGG ids and add a column to the dataframe with them
+# From the long string of aliases get KEGG ids and add a column to modelSEED dataframe with them
 getModelSEEDKEGGIDS <- function(x){
         splitAlias <- strsplit(x, split = "|", fixed = T)[[1]]
         posKEGGID <- grep("KEGG", splitAlias)
@@ -50,8 +47,10 @@ getModelSEEDKEGGIDS <- function(x){
 
 modelSEED$KEGGIDs <- sapply(modelSEED$aliases, getModelSEEDKEGGIDS)
 
+# in this table where there is no KEGG id there is the string "none". Substitute by NA
 sMtb_mets$`KeGG ID`[sMtb_mets$`KeGG ID` == "none"] <- NA
 
+# transforms kegg ids to seed ids. 
 KEGGids2SEEDids <- function(KEGGID){
         if(!require(R.cache)) install.packages("R.cache") 
         library(R.cache)
@@ -72,6 +71,7 @@ KEGGids2SEEDids <- function(KEGGID){
         return(SEEDid)
 }
 
+# Gets mass from modelSEED dataframe
 SEEDids2Mass <- function(SEEDID){
         if(!require(R.cache)) install.packages("R.cache") 
         library(R.cache)
@@ -89,6 +89,7 @@ SEEDids2Mass <- function(SEEDID){
         return(SEEDMASS)
 }
 
+# retrieves monoisotopic mass and molecular weight from kegg--> problem: usually masses and weights from KEGG are from ions
 KEGGid2MolWeightNExactMass <- function(KEGGID){
         if(!is.na(KEGGID)){
                 get <- tryCatch(keggGet(KEGGID), error = function(e) return("none"))
@@ -112,23 +113,34 @@ KEGGid2MolWeightNExactMass <- function(KEGGID){
 sMtb_mets$SEEDid <- sapply(sMtb_mets$`KeGG ID`, KEGGids2SEEDids)
 sMtb_mets$seedMass <- sapply(sMtb_mets$SEEDid, SEEDids2Mass)
 sMtb_mets_exMassMW <- t(sapply(sMtb_mets$`KeGG ID`, KEGGid2MolWeightNExactMass))
-sMtb_mets$exactMass <- sMtb_mets_exMassMW[, 2]
+sMtb_mets$mIsotMass_KEGG <- sMtb_mets_exMassMW[, 2]
 sMtb_mets$molWeight <- sMtb_mets_exMassMW[, 1]
 
 iJO1366_mets$SEEDid <- sapply(iJO1366_mets$`KEGG ID`, KEGGids2SEEDids)
 iJO1366_mets$seedMass <- sapply(iJO1366_mets$SEEDid, SEEDids2Mass)
 iJO1366_mets_exMassMW <- t(sapply(iJO1366_mets$`KEGG ID`, KEGGid2MolWeightNExactMass))
-iJO1366_mets$exactMass <- iJO1366_mets_exMassMW[, 2]
+iJO1366_mets$mIsotMass_KEGG <- iJO1366_mets_exMassMW[, 2]
 iJO1366_mets$molWeight <- iJO1366_mets_exMassMW[, 1]
 
 
 m2155_mets$seedMass <- sapply(m2155_mets$seedID, SEEDids2Mass)
 m2155_mets_exactMass <- t(sapply(m2155_mets$keggID, KEGGid2MolWeightNExactMass))
-m2155_mets$exactMass <- m2155_mets_exactMass[, 2]
+m2155_mets$mIsotMass_KEGG <- m2155_mets_exactMass[, 2]
 m2155_mets$molWeight <- m2155_mets_exactMass[, 1]
 
-# Curate tables: start by removing the compounds that don't have any identifier assigned:
+mtbH37Rv_mets_exactMass <- t(sapply(mtbH37Rv_mets$KEGGID, KEGGid2MolWeightNExactMass))
+mtbH37Rv_mets$mIstMass_KEGG <- mtbH37Rv_mets_exactMass[, 2]
+mtbH37Rv_mets$molWeigh <- mtbH37Rv_mets_exactMass[, 1]
 
+############################################################################################################################
+##### TABLE CURATION ####################################################################################################### 
+############################################################################################################################
+
+############################################################################################################################
+### sMtb metabolites                                                                                                       # 
+############################################################################################################################
+
+# Remove the compounds that don't have any identifier assigned:
 sMtb_mets <- sMtb_mets[!is.na(sMtb_mets$`KeGG ID`) | sMtb_mets$`PubChem ID` != "none" | sMtb_mets$`ChEBI ID` != "none", ]
 
 # Now curate manually
@@ -139,7 +151,7 @@ sMtb_mets <- sMtb_mets[!is.na(sMtb_mets$`KeGG ID`) | sMtb_mets$`PubChem ID` != "
 sMtb_mets$Name[sMtb_mets$Name == "(R)-3-Hydroxy-3-methyl-2-oxopentanoate"] <- "(S)-2-Aceto-2-hydroxybutanoate"
 
 # Alpha mycolate: not in kegg, but in chebi: include monoisotopic mass:
-sMtb_mets$exactMass[sMtb_mets$Name == "alpha-mycolate C80 (26)"] <- 1165.20545
+sMtb_mets$mIsotMass_KEGG[sMtb_mets$Name == "alpha-mycolate C80 (26)"] <- 1165.20545
 
 # apo-[acetyl-CoA:carbon-dioxide ligase (ADP-forming)]: there is no mass information--> remove 
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "apo-[acetyl-CoA:carbon-dioxide ligase (ADP-forming)]"), ]
@@ -155,16 +167,16 @@ sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "[Acetyl-CoA:carbon-dioxide liga
 
 # 2-Demethylmenaquinone (n=7): in kegg there is no mass because there is no n in the entry, but here is 7 so 
 # we can calculate
-sMtb_mets$exactMass[which(sMtb_mets$Name == "2-Demethylmenaquinone (n=7)")] <- 702.5376
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "2-Demethylmenaquinone (n=7)")] <- 702.5376
 
 # decaprenyl phosphate: in kegg this compound doesn't appear--> is a lipid. Add monoisotopic mass from chebi/pubChem
-sMtb_mets$exactMass[which(sMtb_mets$Name == "decaprenyl phosphate")] <- 776.5872
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "decaprenyl phosphate")] <- 776.5872
 
 # Dihydrolipoylprotein: no mass info in KEGG-->generic compound
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Dihydrolipoylprotein"), ]
 
 # decaprenylphoshoryl-5-phosphoribose: not in kegg.---> Get mass from chebi
-sMtb_mets$exactMass[which(sMtb_mets$Name == "decaprenylphoshoryl-5-phosphoribose")] <- 990.6115
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "decaprenylphoshoryl-5-phosphoribose")] <- 990.6115
 
 # Reduced & Oxidized ferredoxin: are proteins, so there is no mass info--->remove
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Reduced ferredoxin"), ]
@@ -174,28 +186,28 @@ sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Oxidized ferredoxin"), ]
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Fe2+"), ]
 
 # 7,8-dihydromonapterin: not in KEGG. Get monoisotopic mass from Chebi
-sMtb_mets$exactMass[which(sMtb_mets$Name == "7,8-dihydromonapterin")] <- 255.0967
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "7,8-dihydromonapterin")] <- 255.0967
 
 # D-glucan monomer: not found in the cell free--> remove it
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "D-glucan monomer"), ]
 
 # hexacosanoyl-CoA: not in KEGG--> get mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "hexacosanoyl-CoA")] <- 1145.5014
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "hexacosanoyl-CoA")] <- 1145.5014
 
 # heptadecanoate: not in KEGG---> get mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "heptadecanoate")] <- 270.25588
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "heptadecanoate")] <- 270.25588
 
 # heptanoyl-CoA: not in KEGG---> get mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "heptanoyl-CoA")] <- 879.20403
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "heptanoyl-CoA")] <- 879.20403
 
 # hexacosanoate: not in KEGG---> get mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "hexacosanoate")] <- 396.39673
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "hexacosanoate")] <- 396.39673
 
 # Hexadecanoyl-[acp]: generic compound---> remove
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Hexadecanoyl-[acp]"), ]
 
 # S-(2-Methylpropanoyl)-dihydrolipoamide: Not in KEGG---> add mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "S-(2-Methylpropanoyl)-dihydrolipoamide")] <- 277.11702
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "S-(2-Methylpropanoyl)-dihydrolipoamide")] <- 277.11702
 
 # Lipoylprotein: variable mass, so there's no info about it---> remove
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Lipoylprotein"), ]
@@ -212,6 +224,9 @@ sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Malonyl-[acyl-carrier protein]"
 # Polyphosphate: multiple sizes---> remove
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Polyphosphate"), ]
 
+# Thioredoxin: no info about mass---> remove it
+sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Thioredoxin"), ]
+
 # Thioredoxin disulfide: No info about mass---> remove it
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Thioredoxin disulfide"), ]
 
@@ -225,7 +240,7 @@ sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "(2E)-Octadecenoyl-[acp]"), ]
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Phosphatidylethanolamine"), ]
 
 # PIM2: not in KEGG---> add mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "PIM2")] <- 1176.67843
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "PIM2")] <- 1176.67843
 
 # S-Aminomethyldihydrolipoylprotein: has R groups---> remove it
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "S-Aminomethyldihydrolipoylprotein"), ]
@@ -235,24 +250,65 @@ sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Ubiquinone (n=7)"), ]
 sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "Ubiquinol (n=7)"), ]
 
 # alpha,alpha-Trehalose-2-sulfate: not in KEGG---> get mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "alpha,alpha-Trehalose-2-sulfate")] <- 422.07303
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "alpha,alpha-Trehalose-2-sulfate")] <- 422.07303
 
 # SL659: not in KEGG---> get mass from ChEBI
-sMtb_mets$exactMass[which(sMtb_mets$Name == "SL659")] <- 659.29542
+sMtb_mets$mIsotMass_KEGG[which(sMtb_mets$Name == "SL659")] <- 659.29542
 
-print(paste("Proportion of compounds with unique mass:", 
-            as.character(length(unique(sMtb_mets$exactMass))/length(sMtb_mets$exactMass))))
+print(paste("Proportion of compounds with unique mass in sMtb:", 
+            as.character(length(unique(sMtb_mets$mIsotMass_KEGG))/length(sMtb_mets$mIsotMass_KEGG))))
 
-sMtb_dupMets <- sMtb_mets[unlist(duplicated(sMtb_mets$exactMass)), ]
+# Check what are the compounds with the same mass
+sMtb_dupMets <- sMtb_mets[unlist(duplicated(sMtb_mets$mIsotMass_KEGG)), ]
 
-View(iJO1366_mets)
+# see if formulas are uncharged:
+print(paste("Number of charged formulas in sMtb table:", 
+            as.character(sum(sapply(sMtb_mets$Formula, function(x) getMolecule(x)$charge)))))
+
+# Get monoisotopic masses from neutral formulas
+sMtb_mets$mIsotMass_fromNeutFormula <- sapply(sMtb_mets$Formula, function(x) check_chemform(isotopes = isotopes, chemforms = x)$monoisotopic_mass)
+
+sMtb_mets_massDisc <- sMtb_mets[!is.na(sMtb_mets$mIsotMass_KEGG), ][round(unlist(sMtb_mets$mIsotMass_KEGG[!is.na(sMtb_mets$mIsotMass_KEGG)]), digits = 4) != round(sMtb_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(sMtb_mets$mIsotMass_KEGG)], ]
+
+View(sMtb_mets_massDisc)
+
+# Check each compound with discrepancies to see why this happens
+
+# 1-(5-Phosphoribosyl)-5-amino-4-imidazolecarboxamide: difference in rounding---> keep it
+
+# 7,8-dihydromonapterin: difference in rounding---> keep it
+
+# decaprenyl phosphate: ChEBI shows charged formula---> keep it
+
+# 7,8-Didemethyl-8-hydroxy-5-deazariboflavin: difference in rounding---> keep it
+
+# D-Fructose 1,6-bisphosphate: difference in rounding---> keep it
+
+# Mn: difference in rounding---> keep it
+
+# Nitric oxide: difference in rounding---> keep it
+
+# SL659: ChEBI considers the negative ion---> keep it
+
+# alpha,alpha-Trehalose 6,6-bismycolate: discrepancies in formula---> remove 
+sMtb_mets <- sMtb_mets[-which(sMtb_mets$Name == "alpha,alpha-Trehalose 6,6-bismycolate"), ]
+
+# Save objects to avoid wasting the time functions need to run
+save(sMtb_mets, file = "sMtb_mets.RData")
+save(m2155_mets, file = "m2155_mets.RData")
+save(mtbH37Rv_mets, file = "mtbH37Rv_mets.RData")
+save(iJO1366_mets, file = "iJO1366_mets.RData")
+
+############################################################################################################################
+### iJO13666 metabolites                                                                                                   # 
+############################################################################################################################
 
 # 2-Demethylmenaquinol 8: has kegg ID, but as longitude is variable in kegg there is no mass. n=8, so from chebi, we get mass
 iJO1366_mets$`KEGG ID`[which(iJO1366_mets$`Metabolite Name` == "2-Demethylmenaquinol 8")] <- "C19847"
-iJO1366_mets$exactMass[which(iJO1366_mets$`Metabolite Name` == "2-Demethylmenaquinol 8")] <- 704.55323
+iJO1366_mets$mIsotMass_KEGG[which(iJO1366_mets$`Metabolite Name` == "2-Demethylmenaquinol 8")] <- 704.55323
 
 # 2-Demethylmenaquinone 8: get mass from ChEBI
-iJO1366_mets$exactMass[which(iJO1366_mets$`Metabolite Name` == "2-Demethylmenaquinone 8")] <- 702.53758
+iJO1366_mets$mIsotMass_KEGG[which(iJO1366_mets$`Metabolite Name` == "2-Demethylmenaquinone 8")] <- 702.53758
 
 # [2Fe-1S] desulfurated iron-sulfur cluster, [2Fe-2S] iron-sulfur cluster, [3Fe-4S] damaged iron-sulfur cluster,
 # [4Fe-4S] iron-sulfur cluster: remove these compounds because are part of proteins
@@ -261,8 +317,6 @@ iJO1366_mets <- iJO1366_mets[-which(iJO1366_mets$`Metabolite Name` %in% c("[2Fe-
                                                                           "[3Fe-4S] damaged iron-sulfur cluster",
                                                                           "[4Fe-4S] iron-sulfur cluster")), ]
 
-save(iJO1366_mets, file = "iJO1366_mets.RData")
-load("iJO1366_mets.RData")
 # lipoprotein, applipoprotein: generic--->remove it 
 iJO1366_mets <- iJO1366_mets[-which(iJO1366_mets$`Metabolite Name` %in% c("lipoprotein", 
                                                                           "applipoprotein")), ]
@@ -273,23 +327,34 @@ iJO1366_mets <- iJO1366_mets[-which(iJO1366_mets$`Metabolite Name` == "Fe2+"), ]
 # Remove compounds with "X" or "R" in the formula, as they have undefined mass
 iJO1366_mets <- iJO1366_mets[-grep("X|R", iJO1366_mets$`Neutral Formula`), ]
 
-iJO1366_mets$exMassRdisop <- sapply(iJO1366_mets$`Neutral Formula`, function(x) getMolecule(x)$exactmass)
+# Get masses from formulas
+iJO1366_mets$mIsotMass_fromNeutFormula <- sapply(iJO1366_mets$`Neutral Formula`, 
+                                                 function(x) check_chemform(isotopes = isotopes, 
+                                                                            chemforms = x)$monoisotopic_mass)
 
-iJO1366_mets$exactMass <- sapply(iJO1366_mets$exactMass, 
-                                 function(x) if(length(x) == 0){x <- NA}else{x <- x})
+iJO1366_mets$mIsotMass_KEGG <- sapply(iJO1366_mets$mIsotMass_KEGG, 
+                                      function(x) if(length(x) == 0){x <- NA}else{x <- x})
 
 
 # See if there are discrepancies between the masses given by function and the ones given based in KEGG ids
-View(iJO1366_mets[!is.na(iJO1366_mets$exactMass), ][round(iJO1366_mets$exactMass[!is.na(iJO1366_mets$exactMass)], digits = 4) != round(iJO1366_mets$exMassRdisop, digits = 4)[!is.na(iJO1366_mets$exactMass)], ])
+iJO1366_mets_massDisc <- iJO1366_mets[!is.na(iJO1366_mets$mIsotMass_KEGG), ][round(iJO1366_mets$mIsotMass_KEGG[!is.na(iJO1366_mets$mIsotMass_KEGG)], digits = 4) != round(iJO1366_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(iJO1366_mets$mIsotMass_KEGG)], ]
+View(iJO1366_mets_massDisc)
+
+# See why the discrepancies happen
 
 # 1,4-dihydroxy-2-napthoyl-CoA: neutral formula here is wrong-charges are applied--> correct it
 iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "1,4-dihydroxy-2-napthoyl-CoA"] <- "C32H42N7O19P3S"
 
+# Adenosyl cobinamide: KEGG considers positive ion with formula C58H84CoN16O11
+
+# Adenosyl cobinamide phosphate: KEGG considers positive ion with formula C58H85CoN16O14P
+
 # ADP-D-glycero-D-manno-heptose: formula has a typo-0 instead of O---> change it 
 iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "ADP-D-glycero-D-manno-heptose"] <- "C17H27N5O16P2"
-iJO1366_mets$exMassRdisop[iJO1366_mets$`Metabolite Name` == "ADP-D-glycero-D-manno-heptose"] <- getMolecule(iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "ADP-D-glycero-D-manno-heptose"])$exactmass
 
-# Adenosine-GDP-cobinamide: keep the same, Rdisop has less decimals, don't know why
+# Adenosine-GDP-cobinamide: KEGG considers negative ion---> keep it
+
+# 5-Amino-1-(5-Phospho-D-ribosyl)imidazole-4-carboxamide: rounding different---> keep it 
 
 # S-Adenosyl-L-methionine: neutral formula is wrong, is the charged one
 iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "S-Adenosyl-L-methionine"] <- "C15H22N6O5S"
@@ -367,7 +432,91 @@ iJO1366_mets <- iJO1366_mets[-which(iJO1366_mets$`KEGG ID` %in% c("C05898",
 # (-)-Ureidoglycolate: neutral formula is wrong (anion)---> correct it 
 iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "(-)-Ureidoglycolate"] <- "C3H6N2O4"
 
-# Zinc: weird, in Rdisop there is 71.90470, but when running the function it's ok
-iJO1366_mets$exMassRdisop[iJO1366_mets$`Metabolite Name` == "Zinc"] <- getMolecule(iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "Zinc"])$exactmass
+# N-Acetyl-D-galactosamine: formula is wrong
+iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "(-)-Ureidoglycolate"] <- "C8H15NO6"
 
-# 
+# Fe(III)dicitrate: KEGG considers charged ion (negative)---> keep it
+
+# fusidic acid: here it has one less oxigen atom--->correct formula, charged an uncharged
+iJO1366_mets$`Neutral Formula`[iJO1366_mets$`Metabolite Name` == "fusidic acid"] <- "C31H48O6"
+iJO1366_mets$`Charged Formula`[iJO1366_mets$`Metabolite Name` == "fusidic acid"] <- "C31H48O6"
+
+iJO1366_mets$mIsotMass_fromNeutFormula <- sapply(iJO1366_mets$`Neutral Formula`, 
+                                                 function(x) check_chemform(isotopes = isotopes, 
+                                                                            chemforms = x)$monoisotopic_mass)
+
+save(iJO1366_mets, file = "iJO1366_mets.RData")
+
+load("iJO1366_mets.RData")
+load("sMtb_mets.RData")
+load("mtbH37Rv_mets.RData")
+load("m2155_mets.RData")
+
+
+
+View(iJO1366_mets[!is.na(iJO1366_mets$mIsotMass_KEGG), ][round(iJO1366_mets$mIsotMass_KEGG[!is.na(iJO1366_mets$mIsotMass_KEGG)], digits = 4) != round(iJO1366_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(iJO1366_mets$mIsotMass_KEGG)], ])
+
+# Remove unnecessary columns
+iJO1366_mets <- iJO1366_mets[-which(colnames(iJO1366_mets) %in% c("seedMass", "Alternate Names", "Compartment"))]
+
+length(unique(iJO1366_mets$`Metabolite Name`))
+
+print(paste("Proportion of compounds with unique mass in iJO1366:", 
+            as.character(length(unique(round(iJO1366_mets$mIsotMass_fromNeutFormula, digits = 4)))/length(iJO1366_mets$mIsotMass_fromNeutFormula))))
+
+############################################################################################################################
+### m2155 metabolites                                                                                                      # 
+############################################################################################################################
+
+m2155_mets$formula <- as.character(m2155_mets$formula)
+m2155_mets$formula[m2155_mets$formula %in% c("", ".")] <- NA
+
+m2155_mets <- m2155_mets[-grep("R|X", m2155_mets$formula), ]
+
+m2155_mets <- m2155_mets[!is.na(m2155_mets$formula), ]
+
+m2155_mets <- m2155_mets[m2155_mets$mIsotMass_KEGG != "numeric(0)", ]
+
+
+m2155_mets$mIsotMass_fromNeutFormula <- sapply(m2155_mets$formula, 
+                                               function(x) check_chemform(isotopes = isotopes, 
+                                                                          chemforms = x)$monoisotopic_mass)
+
+m2155_mets$formula_KEGG <- sapply(m2155_mets$keggID, function(x) keggGet(x)[[1]]$FORMULA)
+
+m2155_mets$mIsotMass_fromKEGGFormula <- sapply(m2155_mets$formula_KEGG, 
+                                               function(x) check_chemform(isotopes = isotopes, 
+                                                                          chemforms = x)$monoisotopic_mass)
+
+m2155_mets_massDisc <- m2155_mets[!is.na(m2155_mets$mIsotMass_KEGG), ][round(unlist(m2155_mets$mIsotMass_KEGG[!is.na(m2155_mets$mIsotMass_KEGG)]), digits = 4) != round(m2155_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(m2155_mets$mIsotMass_KEGG)], ]
+# A lot of discrepancies---> seems that formulas here are all ions ?¿?¿?¿
+
+
+dim(m2155_mets)
+dim(m2155_mets_massDisc)
+
+print(paste("Proportion of compounds with unique mass in m2155:",
+            as.character(length(round(unique(m2155_mets$mIsotMass_fromKEGGFormula), digits = 4))/length(m2155_mets$mIsotMass_fromKEGGFormula))))
+
+
+############################################################################################################################
+### mtbH37Rv metabolites                                                                                                   # 
+############################################################################################################################
+
+View(mtbH37Rv_mets)
+
+mtbH37Rv_mets$KEGGID <- sapply(mtbH37Rv_mets$KEGGID, function(x) strsplit(as.character(x), split = "; ")[[1]][1])
+
+# remove compounds that have in formula stuff that are not chemical elements
+mtbH37Rv_mets <- mtbH37Rv_mets[-grep("R|X", mtbH37Rv_mets$formula), ]
+# few compounds have a couple of kegg ids. Keep just the first, as it's the good
+strsplit(as.character(mtbH37Rv_mets$KEGGID), split = "; ")[[1]][1]
+
+mtbH37Rv_mets$formula <- as.character(mtbH37Rv_mets$formula)
+mtbH37Rv_mets <- mtbH37Rv_mets[!mtbH37Rv_mets$formula %in% c("", "."), ]
+
+mtbH37Rv_mets$mIstMass_fromKEGGFormula <- sapply(mtbH37Rv_mets$formula, 
+                                                 function(x) check_chemform(isotopes = isotopes, 
+                                                                            chemforms = x)$monoisotopic_mass)
+
+m2155_mets_massDisc <- m2155_mets[!is.na(m2155_mets$mIsotMass_KEGG), ][round(unlist(m2155_mets$mIsotMass_KEGG[!is.na(m2155_mets$mIsotMass_KEGG)]), digits = 4) != round(m2155_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(m2155_mets$mIsotMass_KEGG)], ]
