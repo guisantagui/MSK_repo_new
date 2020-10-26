@@ -478,6 +478,10 @@ print(paste("Proportion of compounds with unique mass in iJO1366:",
 
 # Turn names into character vector 
 m2155_mets$name <- as.character(m2155_mets$name)
+# Turn KEGG ids into caracter vector
+
+m2155_mets$keggID <- as.character(m2155_mets$keggID)
+
 # Remove metabolites with no name 
 m2155_mets <- m2155_mets[-which(m2155_mets$name == ""), ]
 
@@ -531,7 +535,7 @@ print(paste("Proportion of compounds with unique mass in m2155:",
 View(mtbH37Rv_mets)
 
 # remove compounds that have in formula stuff that are not chemical elements
-mtbH37Rv_mets <- mtbH37Rv_mets[-grep("R|X", mtbH37Rv_mets$formula), ]
+mtbH37Rv_mets <- mtbH37Rv_mets[-grep("n|R|X", mtbH37Rv_mets$formula), ]
 
 # Convert formula to factor and remove compounds without a formula 
 mtbH37Rv_mets$formula <- as.character(mtbH37Rv_mets$formula)
@@ -544,6 +548,7 @@ mtbH37Rv_mets$mIsotMass_fromFormula <- sapply(mtbH37Rv_mets$formula,
 
 # get formulas from KEGG
 mtbH37Rv_mets$formula_KEGG <- sapply(mtbH37Rv_mets$KEGGID, function(x) if(!is.na(x)) keggGet(x)[[1]]$FORMULA else x <- NA)
+mtbH37Rv_mets <- mtbH37Rv_mets[-grep("n|R|X", mtbH37Rv_mets$formula_KEGG), ]
 
 # get monoisotopic mass from kegg formulas
 mtbH37Rv_mets$mIsotMass_fromKEGGFormula <- sapply(mtbH37Rv_mets$formula_KEGG, 
@@ -557,3 +562,69 @@ save(sMtb_mets, file = "sMtb_mets.RData")
 save(m2155_mets, file = "m2155_mets.RData")
 save(mtbH37Rv_mets, file = "mtbH37Rv_mets.RData")
 save(iJO1366_mets, file = "iJO1366_mets.RData")
+
+load("sMtb_mets.RData")
+load("m2155_mets.RData")
+load("mtbH37Rv_mets.RData")
+load("iJO1366_mets.RData")
+
+
+# Do mixed dataframe from all model lists
+
+# remove charges from m2155 names 
+m2155_mets$name <- gsub("\\(\\+\\)|\\(1\\+\\)|\\(2\\+\\)|\\(3\\+\\)|\\(1\\-\\)|\\(2\\-\\)|\\(3\\-\\)|\\(4\\-\\)|\\(5\\-\\)", "", m2155_mets$name)
+
+length(m2155_mets$name)/length(unique(m2155_mets$name))
+
+# These compounds have weird characters---> change them 
+m2155_mets$name[m2155_mets$keggID == "C05399"] <- gsub(";", "", keggGet("C05399")[[1]]$NAME[1])
+m2155_mets$name[m2155_mets$keggID == "C11508"] <- gsub(";", "", keggGet("C11508")[[1]]$NAME[1])
+m2155_mets$name[m2155_mets$keggID == "C05670"] <- gsub(";", "", keggGet("C05670")[[1]]$NAME[1])
+
+allKEGGIDs <- c(sMtb_mets$`KeGG ID`, 
+                m2155_mets$keggID, 
+                mtbH37Rv_mets$KEGGID, 
+                iJO1366_mets$`KEGG ID`)
+
+sum(is.na(allKEGGIDs))/length(allKEGGIDs)
+
+length(unique(allKEGGIDs))
+
+
+sMtb_mets <- sMtb_mets[, c("Name", "Formula", "KeGG ID", "PubChem ID", "ChEBI ID", "mIsotMass_fromNeutFormula", "molWeight")]
+sMtb_mets$`PubChem ID`[sMtb_mets$`PubChem ID` == "none"] <- NA
+sMtb_mets$`ChEBI ID`[sMtb_mets$`ChEBI ID` == "none"] <- NA
+
+iJO1366_mets$`PubChem ID` <- sapply(iJO1366_mets$`KEGG ID`, function(x) if(!is.na(x))gsub("pubchem:", "", keggConv("pubchem", paste("cpd:", sep = "", x))[1]) else x <- NA)
+iJO1366_mets$`ChEBI ID` <- sapply(iJO1366_mets$`KEGG ID`, function(x) if(!is.na(x))gsub("chebi:", "", keggConv("chebi", paste("cpd:", sep = "", x))[1]) else x <- NA)
+iJO1366_mets <- iJO1366_mets[, c("Metabolite Name", "Neutral Formula", "KEGG ID", "PubChem ID", "ChEBI ID","mIsotMass_fromNeutFormula", "molWeight")]
+
+m2155_mets$`PubChem ID` <- sapply(m2155_mets$keggID, function(x) if(!is.na(x))gsub("pubchem:", "", keggConv("pubchem", paste("cpd:", sep = "", x))[1]) else x <- NA)
+m2155_mets$`ChEBI ID` <- sapply(m2155_mets$keggID, function(x) if(!is.na(x))gsub("chebi:", "", keggConv("chebi", paste("cpd:", sep = "", x))[1]) else x <- NA)
+m2155_mets <- m2155_mets[, c("name", "formula_KEGG", "keggID", "PubChem ID", "ChEBI ID", "mIsotMass_fromKEGGFormula", "molWeight")]
+
+mtbH37Rv_mets$`PubChem ID` <- sapply(mtbH37Rv_mets$KEGGID, function(x) if(!is.na(x))gsub("pubchem:", "", keggConv("pubchem", paste("cpd:", sep = "", x))[1]) else x <- NA)
+mtbH37Rv_mets$`ChEBI ID` <- sapply(mtbH37Rv_mets$KEGGID, function(x) if(!is.na(x))gsub("chebi:", "", keggConv("chebi", paste("cpd:", sep = "", x))[1]) else x <- NA)
+mtbH37Rv_mets <- mtbH37Rv_mets[, c("seedName", "formula_KEGG", "KEGGID", "PubChem ID", "ChEBI ID", "mIsotMass_fromKEGGFormula", "molWeigh")]
+
+colnames(sMtb_mets) <- c("name", "formula", "KEGG_ID", "PubChem_ID", "ChEBI ID", "monoIsotopicMass", "molecularWeight")
+colnames(iJO1366_mets) <- c("name", "formula", "KEGG_ID", "PubChem_ID", "ChEBI ID", "monoIsotopicMass", "molecularWeight")
+colnames(m2155_mets) <- c("name", "formula", "KEGG_ID", "PubChem_ID", "ChEBI ID", "monoIsotopicMass", "molecularWeight")
+colnames(mtbH37Rv_mets) <- c("name", "formula", "KEGG_ID", "PubChem_ID", "ChEBI ID", "monoIsotopicMass", "molecularWeight")
+
+allMets <- rbind.data.frame(sMtb_mets,
+                            iJO1366_mets,
+                            m2155_mets,
+                            mtbH37Rv_mets)
+
+allMets_wKeggID <- allMets[match(unique(allMets$KEGG_ID[!is.na(allMets$KEGG_ID)]), allMets$KEGG_ID), ]
+
+allMets_woKeggID <- allMets[is.na(allMets$KEGG_ID), ][apply(allMets_woKeggID, 1, function(x) sum(is.na(x)) != 6), ]
+
+length(unique(allMets_woKeggID$name))/length(allMets_woKeggID$name)
+
+
+allMets <- rbind.data.frame(allMets_wKeggID, allMets_woKeggID)
+
+save(allMets, file = "allMets.RData")
+write.csv(allMets, file = "allMets.csv")
