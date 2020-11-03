@@ -8,6 +8,8 @@ if(!require(rtracklayer)) install.packages("rtracklayer")
 library(rtracklayer)
 if(!require(ropls)) install.packages("ropls")
 library(ropls)
+if(!require(vcfR)) install.packages("vcfR")
+library(vcfR)
 
 setwd("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/mtbcDelAnal")
 
@@ -27,19 +29,6 @@ for(i in 1:length(fileNames)){
                 allDels <- cbind.data.frame(allDels, delsLin)
         }
 }
-
-allDelsPCA <- prcomp(t(allDels))
-
-fviz_pca_ind(allDelsPCA, habillage = sapply(colnames(allDels), function(x) strsplit(x, "_")[[1]][2]))
-
-annot <- sapply(paste("mtu", rownames(allDels), sep = ":"), function(x){
-        a <- keggGet(x)[[1]]$ORTHOLOGY 
-        if(!is.null(a)){
-                x <- a
-        }else{
-                x <- NA
-        }
-        })
 
 getGeneDBIDs <- function(RvCodes){
         ort <- c()
@@ -100,17 +89,45 @@ allDels <- cbind.data.frame(annotDF, allDels)
 save(allDels, file = "allDels.RData")
 
 allDelsPCA <- prcomp(t(allDels[, 7:ncol(allDels)]))
-
-fviz_pca_ind(allDelsPCA, habillage = sapply(colnames(allDels)[7:ncol(allDels)], function(x) strsplit(x, "_")[[1]][2]))
-
 save(allDelsPCA, file = "mtbcAllDelsPCA.RData")
+
+pdf(file = "allDelsPCA.pdf")
+fviz_pca_ind(allDelsPCA, habillage = sapply(colnames(allDels)[7:ncol(allDels)], function(x) strsplit(x, "_")[[1]][2]))
+dev.off()
 
 enzDels <- allDels[!is.na(allDels$EC_number), ]
 
 enzDelsPCA <- prcomp(t(enzDels[, 7:ncol(enzDels)]))
 
+pdf(file = "enzDelsPCA.pdf")
 fviz_pca_ind(enzDelsPCA, habillage = sapply(colnames(enzDels)[7:ncol(enzDels)], function(x) strsplit(x, "_")[[1]][2]))
+dev.off()
 
 linGroup <- gsub("[[:digit:]]+", "", sapply(colnames(allDels)[7:ncol(allDels)], function(x) strsplit(x, "_")[[1]][2]))
 
-enzDelsOPLSDA <- opls(t(enzDels[, 7:ncol(enzDels)]), linGroup)
+pdf("enzDelsOPLSDA.pdf")
+enzDelsOPLSDA <- opls(t(enzDels[, 7:ncol(enzDels)]), 
+                      linGroup,
+                      predI = 1, 
+                      orthoI = 3)
+dev.off()
+
+enzDelsOPLSDA_loads <- getLoadingMN(enzDelsOPLSDA,)
+
+enzDelsOPLSDA_loads <- cbind.data.frame(enzDels[, 1:6],
+                                        enzDelsOPLSDA_loads)
+
+colnames(enzDelsOPLSDA_loads)[ncol(enzDelsOPLSDA_loads)] <- "loadings_p1"
+
+enzDelsOPLSDA_loadsOrdered <- enzDelsOPLSDA_loads[order(enzDelsOPLSDA_loads$loadings_p1), ]
+
+enzDelsPCAROPLS <- opls(t(enzDels[, 7:ncol(enzDels)]))
+
+enzDelsMannWhit <- apply(enzDels[, 7:ncol(enzDels)], 1, function(x) wilcox.test(x[linGroup == "A"], x[linGroup == "L"])$p.value)
+enzDelsMannWhitAdjust <- p.adjust(enzDelsMannWhit, "BH")
+
+enzDelsSignifPvals <- enzDelsMannWhitAdjust[enzDelsMannWhitAdjust < 0.05]
+
+enzDelsSignif <- allDels[match(names(enzDelsSignif), rownames(allDels)), ]
+
+View(enzDelsOPLSDA_loadsOrdered)
