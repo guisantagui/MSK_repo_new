@@ -10,6 +10,12 @@ if(!require(ropls)) install.packages("ropls")
 library(ropls)
 if(!require(vcfR)) install.packages("vcfR")
 library(vcfR)
+if(!require(ape)) install.packages("ape")
+library(ape)
+if(!require(ggplot2)) install.packages("ggplot2")
+library(ggplot2)
+if(!require(dendextend)) install.packages("dendextend")
+library(dendextend)
 
 setwd("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/mtbcDelAnal")
 
@@ -87,23 +93,95 @@ annotDF$EC_number <- ECnum
 allDels <- cbind.data.frame(annotDF, allDels)
 
 save(allDels, file = "allDels.RData")
+load("allDels.RData")
+write.csv(allDels, file = "allDels.csv")
+
+lineages <- sapply(colnames(allDels)[7:ncol(allDels)], function(x) strsplit(x, "_")[[1]][2])
+linGroup <- gsub("[[:digit:]]+", "", lineages)
+linCols <- c("#c4bf62",
+             "#87e0a0",
+             "#6db3d6",
+             "#f279ce",
+             "#ff30c1",
+             "#001aff",
+             "#8826b5",
+             "#ff0000",
+             "#871414",
+             "#24ad37",
+             "#fbff00",
+             "#ff9d00",
+             "#37ff30")
+names(linCols) <- unique(lineages)
 
 allDelsPCA <- prcomp(t(allDels[, 7:ncol(allDels)]))
 save(allDelsPCA, file = "mtbcAllDelsPCA.RData")
+load("mtbcAllDelsPCA.RData")
 
 pdf(file = "allDelsPCA.pdf")
-fviz_pca_ind(allDelsPCA, habillage = sapply(colnames(allDels)[7:ncol(allDels)], function(x) strsplit(x, "_")[[1]][2]))
+fviz_pca_ind(allDelsPCA, 
+             col.ind = lineages,
+             habillage = lineages,
+             geom = "point") + 
+        scale_color_manual(name = "Lineages", 
+                           labels = lineages,
+                           values = linCols) +
+        scale_shape_manual(name = "Lineages", 
+                           values = c(rep(2, 4),
+                                      rep(19, 9)),
+                           labels = sapply(linGroup, function(x) if(x == "A") x <- "Animal" else x <- "Human"))
 dev.off()
+
+allDelsDist <- dist(t(allDels[, 7:ncol(allDels)]), method = "euclidean")
+allDelsHCA <- hclust(allDelsDist, method = "ward.D")
+save(allDelsHCA, file = "allDelsHCA.RData")
+load("allDelsHCA.RData")
 
 enzDels <- allDels[!is.na(allDels$EC_number), ]
 
 enzDelsPCA <- prcomp(t(enzDels[, 7:ncol(enzDels)]))
+save(enzDelsPCA, file = "enzDelsPCA.RData")
+load("enzDelsPCA.RData")
 
 pdf(file = "enzDelsPCA.pdf")
-fviz_pca_ind(enzDelsPCA, habillage = sapply(colnames(enzDels)[7:ncol(enzDels)], function(x) strsplit(x, "_")[[1]][2]))
+fviz_pca_ind(enzDelsPCA, 
+             col.ind = lineages,
+             habillage = lineages,
+             geom = "point") + 
+        scale_color_manual(name = "Lineages", 
+                           labels = lineages,
+                           values = linCols) +
+        scale_shape_manual(name = "Lineages", 
+                           values = c(rep(2, 4),
+                                      rep(19, 9)),
+                           labels = sapply(linGroup, function(x) if(x == "A") x <- "Animal" else x <- "Human"))
 dev.off()
 
-linGroup <- gsub("[[:digit:]]+", "", sapply(colnames(allDels)[7:ncol(allDels)], function(x) strsplit(x, "_")[[1]][2]))
+enzDelsDist <- dist(t(enzDels[, 7:ncol(allDels)]), method = "euclidean")
+enzDelsHCA <- hclust(enzDelsDist, method = "ward.D")
+save(enzDelsHCA, file = "enzDelsHCA.RData")
+load("enzDelsHCA.RData")
+
+enzDelsDend <- as.dendrogram(enzDelsHCA)
+enzDelsGGdend <- as.ggdend(enzDelsDend)
+
+ggplot(enzDelsGGdend, labels = FALSE) + 
+        scale_y_reverse(expand = c(0.2, 0)) +
+        coord_polar(theta="x")
+
+dendCols <- linCols[match(sapply(labels(enzDelsDend), function(x) strsplit(x, "_")[[1]][2]), names(linCols))]
+dendCols <- linCols[match(sapply(colnames(allDels[, 7:ncol(allDels)]), function(x) strsplit(x, "_")[[1]][2]), names(linCols))]
+
+pdf("enzDend.pdf")
+plot(as.phylo(enzDelsHCA), 
+     type = "fan",
+     tip.color = dendCols,
+     cex = 0.05,
+     label.offset = 1)
+#legend(1, 
+#       95, 
+#       legend = unique(lineages),
+#       col = linCols)
+dev.off()
 
 pdf("enzDelsOPLSDA.pdf")
 enzDelsOPLSDA <- opls(t(enzDels[, 7:ncol(enzDels)]), 
@@ -121,7 +199,10 @@ colnames(enzDelsOPLSDA_loads)[ncol(enzDelsOPLSDA_loads)] <- "loadings_p1"
 
 enzDelsOPLSDA_loadsOrdered <- enzDelsOPLSDA_loads[order(enzDelsOPLSDA_loads$loadings_p1), ]
 
-enzDelsPCAROPLS <- opls(t(enzDels[, 7:ncol(enzDels)]))
+enzDelsPCAROPLS <- opls(t(enzDels[, 7:ncol(enzDels)]), 
+                        typeVc = "x-score", 
+                        parAsColFcVn = linGroup)
+save(enzDelsPCAROPLS, file = "enzDelsPCAROPLS.RData")
 
 enzDelsMannWhit <- apply(enzDels[, 7:ncol(enzDels)], 1, function(x) wilcox.test(x[linGroup == "A"], x[linGroup == "L"])$p.value)
 enzDelsMannWhitAdjust <- p.adjust(enzDelsMannWhit, "BH")
@@ -129,5 +210,7 @@ enzDelsMannWhitAdjust <- p.adjust(enzDelsMannWhit, "BH")
 enzDelsSignifPvals <- enzDelsMannWhitAdjust[enzDelsMannWhitAdjust < 0.05]
 
 enzDelsSignif <- allDels[match(names(enzDelsSignif), rownames(allDels)), ]
+save(enzDelsSignif, file = "enzDelsSignif.RData")
+
 
 View(enzDelsOPLSDA_loadsOrdered)
