@@ -639,3 +639,46 @@ heatmap.2(as.matrix(t(ccmnNormMets)), distfun = function(x) as.dist(cor(t(x))),
 
 dev.off()
 
+
+# Do mannWhit test to see if anthranilate is differential
+ccmnNormMets$rhamn2cats <- rhamnMat$rhamn2cats[match(sapply(rownames(ccmnNormMets), 
+                                                            function(x) strsplit(x, split = "_")[[1]][1]), 
+                                                     rhamnMat$strains)]
+
+ccmnNormMets$rhamn3cats <- rhamnMat$rhamn3cats[match(sapply(rownames(ccmnNormMets), 
+                                                            function(x) strsplit(x, split = "_")[[1]][1]), 
+                                                     rhamnMat$strains)]
+
+
+mannWhitRhamn2cats <- apply(ccmnNormMets[, 1:(ncol(ccmnNormMets)- 1)], 
+                            2, 
+                            function(x) wilcox.test(x[ccmnNormMets$rhamn2cats == 0],
+                                                    x[ccmnNormMets$rhamn2cats == 1])$p.value)
+
+mannWhitRhamn2catsAdj <- p.adjust(mannWhitRhamn2cats, method = "BH")
+
+diffMetsRhamn2Cats <- mannWhitRhamn2catsAdj[mannWhitRhamn2catsAdj < 0.05]
+
+# Anthranilate is not significative. But in clustergram the rightmost cluster, which includes
+# rhamn non producers and mid producers, has lower values. So let's take triple category and
+# consider mid producers as non producers. 
+
+ccmnNormMets$rhamn3cats[ccmnNormMets$rhamn3cats == 1] <- 0
+
+mannWhitRhamn3cats <- apply(ccmnNormMets[, 1:(ncol(ccmnNormMets)- 1)], 
+                            2, 
+                            function(x) wilcox.test(x[ccmnNormMets$rhamn3cats == 0],
+                                                    x[ccmnNormMets$rhamn3cats == 2])$p.value)
+
+mannWhitRhamn3catsAdj <- p.adjust(mannWhitRhamn3cats, method = "BH")
+
+diffMetsRhamn3Cats <- mannWhitRhamn3catsAdj[mannWhitRhamn3catsAdj < 0.05]
+
+# Also non significative, but almost significative
+
+boxplot(ccmnNormMets$`Anthranilate 1`[ccmnNormMets$rhamn2cats == 0],
+        ccmnNormMets$`Anthranilate 1`[ccmnNormMets$rhamn2cats == 1])
+
+boxplot(ccmnNormMets$`Anthranilate 1`[ccmnNormMets$rhamn3cats == 0],
+        ccmnNormMets$`Anthranilate 1`[ccmnNormMets$rhamn3cats == 2])
+

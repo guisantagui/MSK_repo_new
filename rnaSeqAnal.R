@@ -122,10 +122,16 @@ which(rownames(signDESeqResults) == "group_9868")
 # Remove hypothetical proteins 
 signDESeqResultsNoHypProt <- signDESeqResults[-grep("group", rownames(signDESeqResults)), ]
 
+signDESeqResultsNoHypProt$Annotation <- prokkAnot$Annotation[match(rownames(signDESeqResultsNoHypProt), prokkAnot$Gene)]
+
 View(signDESeqResultsNoHypProt)
 
 save(signDESeqResultsNoHypProt, file = "signDESeqResultsNoHypProt.RData")
 write.csv(signDESeqResultsNoHypProt, "signDESeqResultsNoHypProt.csv")
+
+# PQS genes are quorum sensing genes and are found lower in rhamn non producers
+
+pqsGenes <- cbind.data.frame(rnaSeq_log[, grep("pqs", colnames(rnaSeq_log))], rnaSeq_log$rhamn2cats)
 
 table(resultsDiffAnalRNASeq$padj < .05)
 
@@ -204,8 +210,28 @@ pValsAdj <- p.adjust(pVals, method = "BH")
 
 sign <- pValsAdj[pValsAdj < 0.05]
 
-wilcox.test(rnaSeq_log$aaeA_1[rnaSeq_log$rhamn2cats == 0], 
-            rnaSeq_log$aaeA_1[rnaSeq_log$rhamn2cats == 1])$p.value
+signTab <- data.frame(gene = names(sign),
+                      p.val = sign,
+                      annotation = prokkAnot$Annotation[match(names(sign), prokkAnot$Gene)])
+
+View(signTab)
+
+wilcox.test(rnaSeq_log[rnaSeq_log$rhamn2cats == 0, grep("lasR", colnames(rnaSeq_log))], 
+            rnaSeq_log[rnaSeq_log$rhamn2cats == 1, grep("lasR", colnames(rnaSeq_log))])$p.value
+
+rnaSeqAnnot <- prokkAnot$Annotation[match(colnames(rnaSeq_log)[1:(ncol(rnaSeq_log)-3)], prokkAnot$Gene)]
+names(rnaSeqAnnot) <- colnames(rnaSeq_log)[1:(ncol(rnaSeq_log)-3)]
+
+quorumGenesRnaSeq <- rnaSeqAnnot[grep("quorum", tolower(rnaSeqAnnot))]
+
+wilcox.test(rnaSeq_log[rnaSeq_log$rhamn2cats == 0, names(quorumGenesRnaSeq)[1]], 
+            rnaSeq_log[rnaSeq_log$rhamn2cats == 1, names(quorumGenesRnaSeq)[1]])$p.value
+
+wilcox.test(rnaSeq_log[rnaSeq_log$rhamn2cats == 0, names(quorumGenesRnaSeq)[2]], 
+            rnaSeq_log[rnaSeq_log$rhamn2cats == 1, names(quorumGenesRnaSeq)[2]])$p.value
+
+wilcox.test(rnaSeq_log[rnaSeq_log$rhamn2cats == 0, names(quorumGenesRnaSeq)[3]], 
+            rnaSeq_log[rnaSeq_log$rhamn2cats == 1, names(quorumGenesRnaSeq)[3]])$p.value
 
 data("airway")
 se <- airway

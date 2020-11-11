@@ -5,8 +5,6 @@ setwd("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/createGnumbersList
 
 dataBase <- as.data.frame(readxl::read_xlsx("C:/Users/Guillem/Documents/PhD/comput/data/mtbcDatabase/Genomes_2020-11-10_10-55-41.xlsx"))
 
-View(dataBase)
-
 dataBase <- dataBase[!is.na(dataBase$`PATH MAPPING OUTPUT`), ]
 
 # Some "L2" are encoded as "2"
@@ -50,9 +48,8 @@ oldGnumFiles <- list.files("C:/Users/Guillem/Documents/PhD/comput/data/mtbcGnumb
 
 doneGnums <- list()
 for(i in 1:length(oldGnumFiles)){
-        print(i)
         tab <- read.table(paste("C:/Users/Guillem/Documents/PhD/comput/data/mtbcGnumbers", 
-                                oldGnumTabs[i], 
+                                oldGnumFiles[i], 
                                 sep = "/"),
                           sep = "\t")
         gNums <- as.character(tab$V1)
@@ -65,6 +62,7 @@ all(doneGnums$A2 %in% newGnums$A2$gNumber)
 all(doneGnums$A3 %in% newGnums$A3$gNumber)
 all(doneGnums$A4 %in% newGnums$A4$gNumber)
 doneGnums$A4[which(!doneGnums$A4 %in% newGnums$A4$gNumber)]
+doneGnums$A4[which(!doneGnums$A4 %in% newGnums$A4$gNumber)] %in% dataBase$`G NUMBER`
 
 all(doneGnums$L1 %in% newGnums$L1$gNumber)
 all(doneGnums$L2 %in% newGnums$L2$gNumber)
@@ -76,6 +74,7 @@ all(doneGnums$L7 %in% newGnums$L7$gNumber)
 all(doneGnums$L8 %in% newGnums$L8$gNumber)
 all(doneGnums$L9 %in% newGnums$L9$gNumber)
 doneGnums$L9[which(!doneGnums$L9 %in% newGnums$L9$gNumber)]
+doneGnums$L9[which(!doneGnums$L9 %in% newGnums$L9$gNumber)] %in% dataBase$`G NUMBER`
 
 lengthsDone <- c()
 lengthsNew <- c()
@@ -120,6 +119,3 @@ for(i in 1:length(gNums2Do)){
                     row.names = F, 
                     col.names = F)
 }
-write.table(genes4txt, file = "allGenesMTBC.txt", sep = "\t", quote = F, row.names = F, col.names = F)
-
-
