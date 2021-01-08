@@ -253,7 +253,11 @@ coldata <- colData(se)
                                   colData = coldata,
                                   design = ~ cell + dex))
 
+signDESeqResultsPQSPHN <- signDESeqResultsNoHypProt[grep("pqs|phn|las|rhl", tolower(rownames(signDESeqResultsNoHypProt))), ]
 
+View(signDESeqResultsPQSPHN)
+
+View(signDESeqResultsPQSPHN)
 
 
 

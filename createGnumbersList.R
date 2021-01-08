@@ -11,6 +11,15 @@ dataBase <- dataBase[!is.na(dataBase$`PATH MAPPING OUTPUT`), ]
 dataBase$LINEAGE[dataBase$LINEAGE == "2"] <- "L2"
 # L9 are in "SUBLINEAGE COLL" column
 dataBase$LINEAGE[dataBase$`SUBLINEAGE COLL` == "L9"] <- "L9"
+# The ones encoded as A are A4
+dataBase$LINEAGE[dataBase$LINEAGE == "A"] <- "A4"
+# The ones encoded as B are A3
+dataBase$LINEAGE[dataBase$LINEAGE == "B"] <- "A3"
+# The ones encoded as C are A2
+dataBase$LINEAGE[dataBase$LINEAGE == "C"] <- "A2"
+# The ones encoded as D are A1
+dataBase$LINEAGE[dataBase$LINEAGE == "D"] <- "A1"
+
 
 L1 <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "L1" & !is.na(dataBase$LINEAGE)])
 L2 <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "L2" & !is.na(dataBase$LINEAGE)])
@@ -25,7 +34,7 @@ A1 <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "A1" & !is.na
 A2 <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "A2" & !is.na(dataBase$LINEAGE)])
 A3 <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "A3" & !is.na(dataBase$LINEAGE)])
 A4 <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "A4" & !is.na(dataBase$LINEAGE)])
-A <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "A" & !is.na(dataBase$LINEAGE)])
+#A <- data.frame(gNumber = dataBase$`G NUMBER`[dataBase$LINEAGE == "A" & !is.na(dataBase$LINEAGE)])
 
 LNA <- data.frame(gNumber = dataBase$`G NUMBER`[is.na(dataBase$LINEAGE)])
 

@@ -27,7 +27,7 @@ for(i in 1:length(fileNames)){
         delsLin <- read.csv(paste("C:/Users/Guillem/Documents/PhD/comput/data/mtbcLineagesDels", fileNames[i], sep = "/"))
         rownames(delsLin) <- delsLin[, 1]
         delsLin <- delsLin[, 2:ncol(delsLin)]
-        lin <- gsub("nr", "", strsplit(fileNames[i], "_|\\.")[[1]][2])
+        lin <- gsub("nr", "", strsplit(fileNames[i], "_|\\.|-")[[1]][2])
         colnames(delsLin) <- paste(colnames(delsLin), lin, sep = "_")
         if(nrow(allDels) == 0){
                 allDels <- delsLin
@@ -164,6 +164,19 @@ load("enzDelsHCA.RData")
 enzDelsDend <- as.dendrogram(enzDelsHCA)
 enzDelsGGdend <- as.ggdend(enzDelsDend)
 
+# See if samples of same lineage are together in tree
+
+dendCut <- sort(cutree(enzDelsDend, k = 13))
+
+uniqueLinsInClust <- list()
+for(i in 1:13){
+        sampsInLin <- names(dendCut[dendCut == i])
+        lin <- unique(sapply(sampsInLin, function(x) strsplit(x, "_")[[1]][2]))
+        uniqueLinsInClust[[i]] <- lin
+}
+uniqueLinsInClust
+
+
 ggplot(enzDelsGGdend, labels = FALSE) + 
         scale_y_reverse(expand = c(0.2, 0)) +
         coord_polar(theta="x")
@@ -209,8 +222,67 @@ enzDelsMannWhitAdjust <- p.adjust(enzDelsMannWhit, "BH")
 
 enzDelsSignifPvals <- enzDelsMannWhitAdjust[enzDelsMannWhitAdjust < 0.05]
 
-enzDelsSignif <- allDels[match(names(enzDelsSignif), rownames(allDels)), ]
+enzDelsSignif <- allDels[match(names(enzDelsSignifPvals), rownames(allDels)), ]
 save(enzDelsSignif, file = "enzDelsSignif.RData")
+write.csv(enzDelsSignif, file = "enzDelsSignif_AvsL.csv")
 
+thrshld <- 0.1
+
+enzDels[enzDels > thrshld]
+class(enzDels$G01493_A1)
+
+binarizeDels <- function(DM, thrshld){
+        nums <- DM[, sapply(DM, class) == "numeric"]
+        gInf <- DM[, sapply(DM, class) != "numeric"]
+        bin <- nums
+        bin[bin < thrshld] <- 0
+        bin[bin >= thrshld] <- 1
+        binOut <- cbind.data.frame(gInf, bin)
+        return(binOut)
+}
+
+enzDelsBin <- binarizeDels(DM = enzDels, thrshld = thrshld)
+
+chiPVals <- c()
+fishPVals <- c()
+enzDelsBinNumCls <- enzDelsBin[, sapply(enzDelsBin, class) == "numeric"]
+for(i in 1:nrow(enzDelsBinNumCls)){
+        cTab <- table(factor(enzDelsBinNumCls[i, ]),
+                      factor(linGroup))
+        chi <- chisq.test(cTab)
+        fish <- fisher.test(cTab)
+        chiPVal <- chi$p.value
+        fishPVal <- fish$p.value
+        chiPVals <- c(chiPVals, chiPVal)
+        fishPVals <- c(fishPVals, fishPVal)
+}
+
+names(chiPVals) <- rownames(enzDelsBin)
+chiPValsAdj <- p.adjust(chiPVals, "BH")
+chiPValsAdjSign <- chiPValsAdj[chiPValsAdj < 0.05]
+
+names(fishPVals) <- rownames(enzDelsBin)
+fishPValsAdj <- p.adjust(fishPVals, "BH")
+fishPValsAdjSign <- fishPValsAdj[fishPValsAdj < 0.05]
+
+enzDelsBinFishSignAvsL <- enzDelsBin[match(names(fishPValsAdjSign), 
+                                           rownames(enzDelsBin)), ]
+
+write.csv(enzDelsBinFishSignAvsL, file = "enzDelsBinFishSignAvsL.csv")
+
+ApropMut <- apply(enzDelsBinFishSignAvsL[, sapply(enzDelsBin, class) == "numeric"][, linGroup == "A"], 1, function(x) sum(x)/length(x))
+LpropMut <- apply(enzDelsBinFishSignAvsL[, sapply(enzDelsBin, class) == "numeric"][, linGroup == "L"], 1, function(x) sum(x)/length(x))
+
+propMutAL <- data.frame(A = ApropMut, L = LpropMut)
+
+View(propMutAL)
+
+enzDelsLoadsAvsLsignif <- enzDelsOPLSDA_loadsOrdered[rownames(enzDelsOPLSDA_loadsOrdered) %in% rownames(enzDelsSignif), ]
+
+save(enzDelsLoadsAvsLsignif, file = "enzDelsLoadsAvsLsignif.RData")
+
+write.csv(enzDelsLoadsAvsLsignif, file = "enzDelsLoadsAvsLsignif.csv")
+
+View(enzDelsLoadsAvsLsignif)
 
 View(enzDelsOPLSDA_loadsOrdered)

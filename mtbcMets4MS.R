@@ -462,10 +462,10 @@ load("m2155_mets.RData")
 
 
 iJO1366_mets_massDisc <- iJO1366_mets[!is.na(iJO1366_mets$mIsotMass_KEGG), ][round(iJO1366_mets$mIsotMass_KEGG[!is.na(iJO1366_mets$mIsotMass_KEGG)], digits = 4) != round(iJO1366_mets$mIsotMass_fromNeutFormula, digits = 4)[!is.na(iJO1366_mets$mIsotMass_KEGG)], ]
-View(iJO1366_mets_massDisc)
+#View(iJO1366_mets_massDisc)
 
 # Remove unnecessary columns
-iJO1366_mets <- iJO1366_mets[-which(colnames(iJO1366_mets) %in% c("seedMass", "Alternate Names", "Compartment"))]
+iJO1366_mets <- iJO1366_mets[!colnames(iJO1366_mets) %in% c("seedMass", "Alternate Names", "Compartment")]
 
 length(unique(iJO1366_mets$`Metabolite Name`))
 
@@ -483,10 +483,10 @@ m2155_mets$name <- as.character(m2155_mets$name)
 m2155_mets$keggID <- as.character(m2155_mets$keggID)
 
 # Remove metabolites with no name 
-m2155_mets <- m2155_mets[-which(m2155_mets$name == ""), ]
+m2155_mets <- m2155_mets[m2155_mets$name != "", ]
 
 # Remove this compound as it's nothing
-m2155_mets <- m2155_mets[-which(m2155_mets$name == "C15815"), ]
+m2155_mets <- m2155_mets[m2155_mets$name != "C15815", ]
 
 m2155_mets$formula <- as.character(m2155_mets$formula)
 m2155_mets$formula[m2155_mets$formula %in% c("", ".")] <- NA
@@ -619,12 +619,18 @@ allMets <- rbind.data.frame(sMtb_mets,
 
 allMets_wKeggID <- allMets[match(unique(allMets$KEGG_ID[!is.na(allMets$KEGG_ID)]), allMets$KEGG_ID), ]
 
-allMets_woKeggID <- allMets[is.na(allMets$KEGG_ID), ][apply(allMets_woKeggID, 1, function(x) sum(is.na(x)) != 6), ]
+allMets_woKeggID <- allMets[is.na(allMets$KEGG_ID), ]
+
+allMets_woKeggID <- allMets_woKeggID[apply(allMets_woKeggID, 1, function(x) sum(is.na(x)) != 6), ]
 
 length(unique(allMets_woKeggID$name))/length(allMets_woKeggID$name)
 
 
 allMets <- rbind.data.frame(allMets_wKeggID, allMets_woKeggID)
+
+sum(is.na(allMets$KEGG_ID))/nrow(allMets)
+
+dim(allMets)
 
 save(allMets, file = "allMets.RData")
 write.csv(allMets, file = "allMets.csv")
