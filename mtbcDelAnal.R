@@ -226,7 +226,7 @@ enzDelsSignif <- allDels[match(names(enzDelsSignifPvals), rownames(allDels)), ]
 save(enzDelsSignif, file = "enzDelsSignif.RData")
 write.csv(enzDelsSignif, file = "enzDelsSignif_AvsL.csv")
 
-thrshld <- 0.1
+thrshld <- 10
 
 enzDels[enzDels > thrshld]
 class(enzDels$G01493_A1)
