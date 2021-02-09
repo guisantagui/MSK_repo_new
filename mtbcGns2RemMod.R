@@ -85,6 +85,37 @@ getDelProp(allDels, toDeleteFromA$gene, linVec = c("A1", "A2", "A3", "A4"), thrh
 getDelProp(allDels, c("Rv2349c", "Rv2350c", "Rv2351c", "Rv3802c"), linVec = c("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "A1", "A2", "A3", "A4"), thrhld = 99.9)
 getDelProp(allDels, c("Rv2349c", "Rv2350c", "Rv2351c", "Rv3802c"), linVec = c("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "A1", "A2", "A3", "A4"), thrhld = 2)
 
+genes4PCR <- c(#"Rv1755c",
+               "Rv2349c",
+               "Rv2350c",
+               "Rv2351c",
+               "Rv3802c",
+               "Rv0217c",
+               "Rv0220",
+               "Rv0646c",
+               "Rv1076",
+               #"Rv1104",
+               #"Rv1105",
+               "Rv1399c",
+               "Rv1400c",
+               "Rv1426c",
+               "Rv1497",
+               "Rv1900c",
+               "Rv1923",
+               "Rv2045c",
+               "Rv2284",
+               "Rv2385",
+               "Rv2463",
+               "Rv2485c",
+               "Rv2970c",
+               "Rv3084",
+               "Rv3176c",
+               "Rv3203",
+               "Rv3487c",
+               "Rv3775")
+
+getDelProp(allDels, genes4PCR, linVec = c("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "A1", "A2", "A3", "A4"), thrhld = 2)
+
 "Rv3802c" %in% enzDels$gene
 
 #getDelProp(enzDels, c("Rv2349c", "Rv2350c", "Rv2351c", "Rv1755c"), linVec = c("A1", "A2", "A3", "A4"), thrhld = 5)

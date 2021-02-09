@@ -1,3 +1,4 @@
+setwd("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/mtbcPlcCovAnal")
 gnumStrain <- data.frame(readxl::read_xlsx("C:/Users/Guillem/Documents/PhD/comput/data/mtbcGnumbers/mtbcGenomesInfo.xlsx"))
 allDels <- read.csv("C:/Users/Guillem/Documents/PhD/comput/wrkng_dirs_clean/mtbcDelAnal/allDels.csv")
 annotDir <- "C:/Users/Guillem/Documents/PhD/comput/data/MTBC_ancestralAnnot"
@@ -58,6 +59,8 @@ A4Smp <- sample(A4Gnums, 4)
 L8Smp <- L8Gnums
 L9Smp <- sample(L9Gnums, 4)
 
+# Add the strains (Chimp) that chantal and carlos tested in the lab
+A1Smp <- c(A1Smp, "G00857")
 
 missLinsGNums <- c(L8Smp, L9Smp, A1Smp, A2Smp, A3Smp, A4Smp)
 
@@ -144,5 +147,6 @@ plcCovDFBin <- apply(plcCovDF[, 2:(ncol(plcCovDF) -1)], 2, function(x){
         x[x >= 5] <- 1 
         return(x)})
 
-
+pdf("plcGenesDels.pdf")
 heatmap(as.matrix(plcCovDFBin), Rowv = NA, Colv = NA, scale = "none")
+dev.off()
